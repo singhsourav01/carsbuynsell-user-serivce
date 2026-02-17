@@ -10,18 +10,15 @@ import {
   PORT,
   STRINGS,
 } from "./constants/app.constant";
-import { apiDoc } from "./docs/api.doc";
 import AdminRoutes from "./routes/admin.routes";
 import OtpRoutes from "./routes/otp.routes";
 import UserRoutes from "./routes/user.routes";
 import { registerWithEureka } from "./utils/eureka.helper";
 import InternalRoutes from "./routes/internal.routes";
-import DeepLinkRoutes from "./routes/deep.link.routes";
 config();
 
 const app = express();
 const port = parseInt(process.env.PORT || "") || PORT;
-const apiDocumentation = apiDoc();
 export let headerToken: string | undefined;
 
 app.use(
@@ -34,7 +31,7 @@ app.use(
   }
 );
 
-app.use((req, res, next) => {
+app.use((req: any, res: any, next: any) => {
   headerToken = req.header("authorization");
   next();
 });
@@ -48,7 +45,6 @@ app.use(API_ENDPOINTS.BASE, UserRoutes);
 app.use(API_ENDPOINTS.BASE, AdminRoutes);
 app.use(API_ENDPOINTS.BASE, OtpRoutes);
 app.use(API_ENDPOINTS.BASE + API_ENDPOINTS.INTERNAL, InternalRoutes);
-app.use(DeepLinkRoutes);
 
 app.use((err: ApiError, req: Request, res: Response, next: NextFunction) => {
   console.log(err);
@@ -59,22 +55,3 @@ app.listen(port, () => {
   console.log(`Server is listening on port ${port}`);
 });
 
-const client = registerWithEureka(
-  EUREKA.ID,
-  port,
-  process.env.EUREKA_IP || "",
-  process.env.EUREKA_HOST || "",
-  parseInt(process.env.EUREKA_PORT || "") || port
-);
-
-function exitHandler() {
-  client.stop(function () {
-    process.exit();
-  });
-}
-
-process.on(STRINGS.EXIT, exitHandler.bind({}));
-process.on(STRINGS.SIGINT, exitHandler.bind({}));
-process.on(STRINGS.SIGUSR1, exitHandler.bind({}));
-process.on(STRINGS.SIGUSR2, exitHandler.bind({}));
-process.on(STRINGS.UNCAUGHT_EXCEPTION, exitHandler.bind({}));

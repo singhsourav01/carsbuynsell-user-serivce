@@ -8,7 +8,7 @@ class UserPortfolioService {
     this.userPortfolioRepository = new UserPortfolioRepository();
   }
 
-  createPortfolio = async (user_id: string, portfolio_ids: string[]) => {
+  createPortfolio = async (user_id: any, portfolio_ids: string[]) => {
     if (!portfolio_ids) return [];
 
     await this.userPortfolioRepository.deleteMany(user_id);

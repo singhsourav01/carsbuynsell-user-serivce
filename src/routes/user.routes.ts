@@ -1,5 +1,5 @@
-import { auth, authUser } from "./../middlewares/auth.middleware";
 import express from "express";
+import { auth, authUser } from "./../middlewares/auth.middleware";
 import UserController from "../controllers/user.controller";
 import { API_ENDPOINTS } from "../constants/app.constant";
 
@@ -66,10 +66,6 @@ UserRoutes.route(API_ENDPOINTS.VERIFY_USER_GET).get(
   userController.getVerifyUser
 );
 
-UserRoutes.route(API_ENDPOINTS.TALENT_DIRECTORY).get(
-  userController.talentDirectory
-);
-
 UserRoutes.route(API_ENDPOINTS.BLOCK_PROFILE).post(
   authUser(),
   userController.blockUser
@@ -102,78 +98,9 @@ UserRoutes.route(API_ENDPOINTS.INTERNAL_USER_BY_ID).get(
   userController.getUserById
 );
 
-UserRoutes.route(API_ENDPOINTS.USER_CURRENT_LOCATION).post(
-  authUser(),
-  userController.addUserCurrentLocation
-);
 
 UserRoutes.route(API_ENDPOINTS.GET_ALL_BLOCKED_BY_ID).get(
   authUser(),
   userController.getAllBlockedAccounts
-);
-
-UserRoutes.get(
-  API_ENDPOINTS.GENERATE_DEEPLINK,
-  authUser(),
-  userController.generateDeepLink
-);
-
-UserRoutes.get(
-  API_ENDPOINTS.REDIRECT_DEEPLINK,
-  authUser(),
-  userController.redirectDeepLink
-);
-
-UserRoutes.route(API_ENDPOINTS.CREATE_USER_CALENDAR).post(
-  authUser(),
-  userController.createCalendar
-);
-UserRoutes.route(API_ENDPOINTS.USER_CALENDAR)
-  .get(authUser(), userController.getUserCalendarByMonthAndYear)
-  .delete(userController.deleteCalender);
-
-UserRoutes.route(API_ENDPOINTS.CALENDAR_DATA)
-  .get(authUser(), userController.getCalenderById)
-  .put(userController.updateCalender)
-  .delete(authUser(), userController.deleteCalender);
-
-UserRoutes.route(API_ENDPOINTS.AGENCY_USES).get(
-  // authBasic(),
-  userController.getAllUsersOfAgency
-);
-
-UserRoutes.route(API_ENDPOINTS.AGENCY_USERS).get(
-  // authBasic(),
-  userController.getAllAgencies
-);
-UserRoutes.route(API_ENDPOINTS.AGENCY_ID_LIST).get(
-  // authBasic(),
-  userController.getAllAgenciesList
-);
-
-UserRoutes.route(API_ENDPOINTS.USER_MODEL_BY_ID)
-  .get(userController.getUserModelById)
-  .put(userController.updateUserModel)
-  .delete(userController.deleteUserModel);
-
-UserRoutes.route(API_ENDPOINTS.GET_ALL_USER_MODEL).get(
-  userController.getAllUserModel
-);
-
-UserRoutes.route(API_ENDPOINTS.USER_MODEL).post(userController.createUserModel);
-
-UserRoutes.route(API_ENDPOINTS.CREATE_AGENCY_USER).post(
-  userController.createUserByAgency
-);
-
-UserRoutes.route(API_ENDPOINTS.INVITE_USER_EMAIL).post(
-  userController.inviteUserEmail
-);
-
-UserRoutes.route(API_ENDPOINTS.AGENCY_REMOVE_USER).delete(
-  userController.removeUserAgency
-);
-UserRoutes.route(API_ENDPOINTS.MANAGED_BY_USERS).get(
-  userController.getUserManagedBy
 );
 export default UserRoutes;

@@ -13,7 +13,7 @@ AdminRoutes.route(API_ENDPOINTS.ADMIN_USERS)
   .get(authAdmin(), adminController.getAllUsers);
 
 AdminRoutes.route(API_ENDPOINTS.ADMIN_USERS_BY_ID)
-  .get(authAdmin(), adminController.getUserById)
+  // .get(authAdmin(), adminController.getUserById)
   .delete(authAdmin(), adminController.deleteById);
 
 AdminRoutes.route(API_ENDPOINTS.ADMIN_USERS_STATUS).put(
@@ -28,23 +28,23 @@ AdminRoutes.route(API_ENDPOINTS.ADMIN_CREATE_AUTH_USER).post(
 AdminRoutes.route(API_ENDPOINTS.ADMIN + API_ENDPOINTS.REPORT_TYPE).get(
   userController.getReportTypesController
 );
-AdminRoutes.route(API_ENDPOINTS.ADMIN + API_ENDPOINTS.REPORT_TYPE).post(
-  adminController.createReportType
-);
-AdminRoutes.route(API_ENDPOINTS.ADMIN + API_ENDPOINTS.REPORTED_ACCOUNT).get(
-  adminController.getAllReportedUserController
-);
-AdminRoutes.route(
-  API_ENDPOINTS.ADMIN + API_ENDPOINTS.REPORTED_ACCOUNT_BY_ID
-).get(adminController.getReportedByUsersController);
-// Route for updating a report type
-AdminRoutes.route(API_ENDPOINTS.ADMIN + API_ENDPOINTS.REPORT_TYPE_BY_ID).put(
-  adminController.updateReportType
-);
+// AdminRoutes.route(API_ENDPOINTS.ADMIN + API_ENDPOINTS.REPORT_TYPE).post(
+//   adminController.createReportType
+// );
+// AdminRoutes.route(API_ENDPOINTS.ADMIN + API_ENDPOINTS.REPORTED_ACCOUNT).get(
+//   adminController.getAllReportedUserController
+// );
+// AdminRoutes.route(
+//   API_ENDPOINTS.ADMIN + API_ENDPOINTS.REPORTED_ACCOUNT_BY_ID
+// ).get(adminController.getReportedByUsersController);
+// // Route for updating a report type
+// AdminRoutes.route(API_ENDPOINTS.ADMIN + API_ENDPOINTS.REPORT_TYPE_BY_ID).put(
+//   adminController.updateReportType
+// );
 
 // Route for deleting a report type
-AdminRoutes.route(API_ENDPOINTS.ADMIN + API_ENDPOINTS.REPORT_TYPE_BY_ID).delete(
-  adminController.deleteReportType
-);
+// AdminRoutes.route(API_ENDPOINTS.ADMIN + API_ENDPOINTS.REPORT_TYPE_BY_ID).delete(
+//   adminController.deleteReportType
+// );
 
 export default AdminRoutes;

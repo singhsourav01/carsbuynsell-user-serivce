@@ -12,7 +12,7 @@ class InternalController {
 
   deleteAllUserDevice = asyncHandler(async (req: Request, res: Response) => {
     const { user_id } = req.params;
-    await this.internalService.deleteAllUserDevice(user_id);
+    // await this.internalService.deleteAllUserDevice(user_id);
     return res
       .status(StatusCodes.OK)
       .json(

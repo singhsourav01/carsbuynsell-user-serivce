@@ -13,6 +13,7 @@
   "devDependencies": {
     "@types/cors": "^2.8.17",
     "@types/eureka-js-client": "^4.5.9",
+    "@types/express": "^5.0.6",
     "@types/node": "^20.12.10",
     "@types/otp-generator": "^4.0.2",
     "prisma": "^5.13.0",
@@ -36,9 +37,8 @@
     "http-status-codes": "^2.3.0",
     "jwks-rsa": "^3.1.0",
     "lodash": "^4.17.21",
-    "mongoose": "^8.3.4",
     "nodemon": "^3.1.0",
     "otp-generator": "^4.0.1",
-    "pm2": "^5.3.1",
+    "pm2": "^5.3.1"
   }
 }

@@ -17,7 +17,6 @@ import {
   updateUserDeviceType,
 } from "../types/userDevice.types";
 import { getFilterUserQuery, getLinkData, queryHandler } from "../utils/helper";
-import { subYears } from "date-fns";
 import { API_ENDPOINTS, INTEGERS } from "../constants/app.constant";
 
 class UserRepository {
@@ -98,47 +97,6 @@ class UserRepository {
           orderBy: {
             user_updated_at: "desc",
           },
-        })
-    );
-  };
-  getAllUsersOfAgency = async (
-    take: number,
-    skip: number,
-    status?: ApprovalStatus,
-    search?: string
-  ) => {
-    const where: any = {
-      NOT: [
-        {
-          user_admin_status: ApprovalStatus.NONE,
-        },
-        {
-          user_role: Role.ADMIN,
-        },
-      ],
-      user_managed_by: {
-        not: null,
-      },
-    };
-    if (search) {
-      where.OR = [
-        {
-          agency_name: { contains: search },
-        },
-        {
-          user_email: { contains: search },
-        },
-      ];
-    }
-    if (status) where.user_admin_status = status;
-
-    return queryHandler(
-      async () =>
-        await prisma.users.findMany({
-          where,
-          select: userSelect,
-          take,
-          skip,
         })
     );
   };
@@ -230,27 +188,6 @@ class UserRepository {
         })
     );
   };
-  getAllAgencies = async () => {
-    return queryHandler(
-      async () =>
-        await prisma.users.findMany({
-          where: {
-            AND: [
-              {
-                agency_name: {
-                  not: null,
-                },
-              },
-              {
-                agency_name: {
-                  not: "",
-                },
-              },
-            ],
-          },
-        })
-    );
-  };
 
   getById = async (id: string) => {
     return queryHandler(
@@ -309,9 +246,6 @@ class UserRepository {
       async () =>
         await prisma.users.findFirst({
           where: { OR: [{ user_primary_phone }, { user_email }] },
-          include: {
-            user_talents: true,
-          },
         })
     );
   };
@@ -342,23 +276,6 @@ class UserRepository {
     return user ? user : false;
   };
 
-  doesTalentExist = async (user_id: string) => {
-    const checkTalentIds = new Set([
-      "2689b9d9-1c87-4f7f-b001-38d914a09a0a",
-      "465c143a-5952-450b-b832-2bbaeabc2535",
-    ]);
-
-    const userTalents = await prisma.user_talents.findMany({
-      where: { ut_user_id: user_id },
-      select: { ut_talent_id: true },
-    });
-
-    const matchingTalentIds = userTalents
-      .map(({ ut_talent_id }) => ut_talent_id)
-      .filter((id) => checkTalentIds.has(id));
-
-    return matchingTalentIds;
-  };
 
   deleteById = async (user_id: string) => {
     return queryHandler(
@@ -417,7 +334,7 @@ class UserRepository {
     is_nearby_locations: boolean,
     user_id: string,
     requirement_talent_id: string,
-    blocked_ids: Array<string>
+    // blocked_ids: Array<string>
   ) => {
     const where = getFilterUserQuery(
       male_requirement,
@@ -431,18 +348,8 @@ class UserRepository {
     const users = await queryHandler(async () =>
       prisma.users.findMany({
         where: {
-          user_talents: {
-            some: {
-              ut_talent_id: {
-                in: [
-                  requirement_talent_id,
-                  "4c2fb373-ff9d-4f4b-a2d0-4119261cb231",
-                ],
-              },
-            },
-          },
           user_id: {
-            notIn: blocked_ids,
+            // notIn: blocked_ids,
           },
         },
         include: {
@@ -512,31 +419,32 @@ class UserRepository {
   };
 
   getUserDevicesByUserId = async (user_id: string) => {
-    return queryHandler(
-      async () =>
-        await prisma.user_login_devices.aggregateRaw({
-          pipeline: [
-            { $match: { uld_user_id: user_id } },
-            {
-              $sort: {
-                uld_device_name: 1,
-                uld_device_type: 1,
-                uld_created_at: -1,
-              },
-            },
-            {
-              $group: {
-                _id: {
-                  deviceName: "$uld_device_name",
-                  deviceType: "$uld_device_type",
-                },
-                document: { $first: "$$ROOT" },
-              },
-            },
-            { $replaceRoot: { newRoot: "$document" } },
-          ],
-        })
-    );
+    // return queryHandler(
+    //   async () =>
+    //     await prisma.user_login_devices.aggregateRaw({
+    //       pipeline: [
+    //         { $match: { uld_user_id: user_id } },
+    //         {
+    //           $sort: {
+    //             uld_device_name: 1,
+    //             uld_device_type: 1,
+    //             uld_created_at: -1,
+    //           },
+    //         },
+    //         {
+    //           $group: {
+    //             _id: {
+    //               deviceName: "$uld_device_name",
+    //               deviceType: "$uld_device_type",
+    //             },
+    //             document: { $first: "$$ROOT" },
+    //           },
+    //         },
+    //         { $replaceRoot: { newRoot: "$document" } },
+    //       ],
+    //     })
+    // );
+    return null;
   };
 
   updateUserDevice = async (uld_id: string, data: updateUserDeviceType) => {
@@ -549,83 +457,6 @@ class UserRepository {
     );
   };
 
-  talentDirectory = async (filters: talentFilterTypes) => {
-    const pageNumber = Number(filters.page) || 1;
-    const take = Number(filters.page_size) || 10;
-    const skip = (pageNumber - INTEGERS.ONE) * take;
-
-    const where: any = {
-      NOT: {
-        user_role: {
-          in: [Role.ADMIN, Role.SUPER_ADMIN],
-        },
-      },
-      user_full_name: {
-        contains: filters.search,
-        mode: "insensitive",
-      },
-      user_locations: filters?.cities
-        ? {
-            some: {
-              ul_city_id: {
-                in: filters?.cities,
-              },
-            },
-          }
-        : undefined,
-      user_talents: filters.talent_id
-        ? {
-            some: {
-              ut_talent_id: filters.talent_id,
-            },
-          }
-        : undefined,
-      ...(filters.min_age !== undefined &&
-        filters.max_age !== undefined && {
-          user_dob: {
-            gte: new Date(
-              new Date().setFullYear(
-                new Date().getFullYear() - Number(filters.max_age)
-              )
-            ),
-            lte: new Date(
-              new Date().setFullYear(
-                new Date().getFullYear() - Number(filters.min_age)
-              )
-            ),
-          },
-        }),
-    };
-
-    const allMatchingTalents = await queryHandler(
-      async () =>
-        await prisma.users.findMany({
-          where,
-        })
-    );
-
-    const heightFilteredTalents = allMatchingTalents.filter((talent) => {
-      const userHeight = parseFloat(talent.user_height || ""); // Convert height to number
-      return (
-        (!filters.min_height || userHeight >= parseFloat(filters.min_height)) &&
-        (!filters.max_height || userHeight <= parseFloat(filters.max_height))
-      );
-    });
-
-    const paginatedTalents = heightFilteredTalents.slice(skip, skip + take);
-
-    const count = heightFilteredTalents.length;
-
-    const link = getLinkData(
-      pageNumber,
-      take,
-      count,
-      API_ENDPOINTS.TALENT_DIRECTORY
-    );
-
-    return { talents: paginatedTalents, count, link };
-  };
-
   getUserByPhone = async (phone: string) => {
     return queryHandler(
       async () =>
@@ -633,7 +464,6 @@ class UserRepository {
           where: {
             OR: [
               { user_primary_phone: phone },
-              { user_secondary_phone: phone },
             ],
             NOT: { user_role: Role.ADMIN },
           },
@@ -663,7 +493,6 @@ class UserRepository {
             },
           },
           select: {
-            agency_name: true,
             user_bio: true,
             user_email: true,
             user_full_name: true,
@@ -674,26 +503,6 @@ class UserRepository {
     );
   };
 
-  getUserManagedBy = async (user_managed_by: string) => {
-    return queryHandler(
-      async () =>
-        await prisma.users.findMany({
-          where: {
-            user_managed_by: user_managed_by,
-          },
-          select: {
-            user_id: true,
-            user_profile_image_file_id: true,
-            user_talents: {
-              select: {
-                ut_talent_id: true,
-                talent_category: true,
-              },
-            },
-          },
-        })
-    );
-  };
 }
 
 export default UserRepository;

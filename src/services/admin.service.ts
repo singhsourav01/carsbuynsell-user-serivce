@@ -1,7 +1,6 @@
 import { ApiError } from "common-microservices-utils";
 import { StatusCodes } from "http-status-codes";
 import _ from "lodash";
-import { getFileById } from "../api/file.api";
 import { adminGetAllUserPick } from "../constants/admin.constant";
 import { API_ERRORS, INTEGERS } from "../constants/app.constant";
 import UserRepository from "../repositories/user.repository";
@@ -39,9 +38,6 @@ class AdminService {
         const user = _.pick(item, adminGetAllUserPick);
         return {
           ...user,
-          user_profile_image:
-            item.user_profile_image_file_id &&
-            (await getFileById(item.user_profile_image_file_id))?.file_url,
         };
       })
     );

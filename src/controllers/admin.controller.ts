@@ -4,18 +4,14 @@ import { Request, Response } from "express";
 import { StatusCodes } from "http-status-codes";
 import { API_ENDPOINTS, API_RESPONSES } from "../constants/app.constant";
 import UserService from "../services/user.service";
-import UserLocationsService from "../services/userLocations.service";
 import UserPortfolioService from "../services/userPortfolio.service";
-import UserSocialLinksService from "../services/userSocialLinks.service";
-import UserTalentService from "../services/userTalents.service";
-import UserVideoLinksService from "../services/userVideoLinks.service";
+
 import {
   getAllUserByAdminQueryType,
   getAllUserQueryType,
 } from "../types/user.types";
 import AdminService from "../services/admin.service";
-import BlockAndReportService from "../services/block.service";
-
+// import BlockAndReportService from "../services/block.service";
 import _ from "lodash";
 
 interface AuthenticatedRequest extends Request {
@@ -25,29 +21,20 @@ interface AuthenticatedRequest extends Request {
 class AdminController {
   userService: UserService;
   adminService: AdminService;
-  userTalentService: UserTalentService;
   userPortfolioService: UserPortfolioService;
-  userSocialLinksService: UserSocialLinksService;
-  userVideoLinksService: UserVideoLinksService;
-  userLocationsService: UserLocationsService;
-  blockAndReportService: BlockAndReportService;
+  // blockAndReportService: BlockAndReportService;
 
   constructor() {
     this.userService = new UserService();
-    this.userTalentService = new UserTalentService();
     this.userPortfolioService = new UserPortfolioService();
-    this.userSocialLinksService = new UserSocialLinksService();
-    this.userVideoLinksService = new UserVideoLinksService();
-    this.userLocationsService = new UserLocationsService();
     this.adminService = new AdminService();
-    this.blockAndReportService = new BlockAndReportService();
+    // this.blockAndReportService = new BlockAndReportService();
   }
 
   createUser = asyncHandler(
     async (req: AuthenticatedRequest, res: Response) => {
       const user = req.body;
       const user_id = req.user.user_id;
-      console.log(user);
 
       const data = {
         user_full_name: user?.full_name,
@@ -64,10 +51,7 @@ class AdminController {
       };
 
       const createdUser = await this.userService.createUser(data);
-      await this.userTalentService.createTalents(
-        createdUser.user_id,
-        user.talent_ids
-      );
+
       await this.userPortfolioService.createPortfolio(
         createdUser.user_id,
         user.portfolio_ids
@@ -86,107 +70,107 @@ class AdminController {
     }
   );
 
-  createReportType = asyncHandler(
-    async (req: AuthenticatedRequest, res: Response) => {
-      const { srt_name } = req.body;
+  // createReportType = asyncHandler(
+  //   async (req: AuthenticatedRequest, res: Response) => {
+  //     const { srt_name } = req.body;
 
-      const issue = await this.blockAndReportService.createReportTypeService(
-        srt_name
-      );
-      res
-        .status(StatusCodes.OK)
-        .json(
-          new ApiResponse(
-            StatusCodes.OK,
-            issue,
-            API_RESPONSES.SUBMITTED_SUCCESSFULLY
-          )
-        );
-    }
-  );
+  //     const issue = await this.blockAndReportService.createReportTypeService(
+  //       srt_name
+  //     );
+  //     res
+  //       .status(StatusCodes.OK)
+  //       .json(
+  //         new ApiResponse(
+  //           StatusCodes.OK,
+  //           issue,
+  //           API_RESPONSES.SUBMITTED_SUCCESSFULLY
+  //         )
+  //       );
+  //   }
+  // );
 
-  deleteReportType = asyncHandler(
-    async (req: AuthenticatedRequest, res: Response) => {
-      const { srt_id } = req.params;
+  // deleteReportType = asyncHandler(
+  //   async (req: AuthenticatedRequest, res: Response) => {
+  //     const { srt_id } = req.params;
 
-      const issue = await this.blockAndReportService.deleteReportTypeService(
-        srt_id
-      );
-      res
-        .status(StatusCodes.OK)
-        .json(
-          new ApiResponse(
-            StatusCodes.OK,
-            issue,
-            API_RESPONSES.SUBMITTED_SUCCESSFULLY
-          )
-        );
-    }
-  );
+  //     const issue = await this.blockAndReportService.deleteReportTypeService(
+  //       srt_id
+  //     );
+  //     res
+  //       .status(StatusCodes.OK)
+  //       .json(
+  //         new ApiResponse(
+  //           StatusCodes.OK,
+  //           issue,
+  //           API_RESPONSES.SUBMITTED_SUCCESSFULLY
+  //         )
+  //       );
+  //   }
+  // );
 
-  updateReportType = asyncHandler(
-    async (req: AuthenticatedRequest, res: Response) => {
-      const { srt_name } = req.body;
-      const { srt_id } = req.params;
-      const issue = await this.blockAndReportService.updateReportTypeService(
-        srt_id,
-        srt_name
-      );
-      res
-        .status(StatusCodes.OK)
-        .json(
-          new ApiResponse(
-            StatusCodes.OK,
-            issue,
-            API_RESPONSES.SUBMITTED_SUCCESSFULLY
-          )
-        );
-    }
-  );
+  // updateReportType = asyncHandler(
+  //   async (req: AuthenticatedRequest, res: Response) => {
+  //     const { srt_name } = req.body;
+  //     const { srt_id } = req.params;
+  //     const issue = await this.blockAndReportService.updateReportTypeService(
+  //       srt_id,
+  //       srt_name
+  //     );
+  //     res
+  //       .status(StatusCodes.OK)
+  //       .json(
+  //         new ApiResponse(
+  //           StatusCodes.OK,
+  //           issue,
+  //           API_RESPONSES.SUBMITTED_SUCCESSFULLY
+  //         )
+  //       );
+  //   }
+  // );
 
-  getAllReportedUserController = asyncHandler(
-    async (req: AuthenticatedRequest, res: Response) => {
-      const { search, page, page_size }: getAllUserQueryType = req.query;
-      const { data, link, totalCount } =
-        await this.blockAndReportService.getAllReportedAccountService(
-          page ?? "",
-          page_size ?? ""
-        );
+  // getAllReportedUserController = asyncHandler(
+  //   async (req: AuthenticatedRequest, res: Response) => {
+  //     const { search, page, page_size }: getAllUserQueryType = req.query;
+  //     const { data, link, totalCount } =
+  //       await this.blockAndReportService.getAllReportedAccountService(
+  //         page ?? "",
+  //         page_size ?? ""
+  //       );
 
-      res
-        .status(StatusCodes.OK)
-        .json(
-          new ApiResponse(
-            StatusCodes.OK,
-            { data, link, totalCount },
-            API_RESPONSES.USER_DATA_FETCHED
-          )
-        );
-    }
-  );
+  //     res
+  //       .status(StatusCodes.OK)
+  //       .json(
+  //         new ApiResponse(
+  //           StatusCodes.OK,
+  //           { data, link, totalCount },
+  //           API_RESPONSES.USER_DATA_FETCHED
+  //         )
+  //       );
+  //   }
+  // );
 
-  getReportedByUsersController = asyncHandler(
-    async (req: AuthenticatedRequest, res: Response) => {
-      const { user_id } = req.params;
-      const { page, page_size }: getAllUserQueryType = req.query;
-      const { data, link, totalCount } =
-        await this.blockAndReportService.getReportedAccountByUserService(
-          page ?? "",
-          page_size ?? "",
-          user_id
-        );
+  // getReportedByUsersController = asyncHandler(
+  //   async (req: AuthenticatedRequest, res: Response) => {
+  //     const { user_id } = req.params;
+  //     const { page, page_size }: getAllUserQueryType = req.query;
+  //     const { data, link, totalCount } =
+  //       await this.blockAndReportService.getReportedAccountByUserService(
+  //         page ?? "",
+  //         page_size ?? "",
+  //         user_id
+  //       );
 
-      res
-        .status(StatusCodes.OK)
-        .json(
-          new ApiResponse(
-            StatusCodes.OK,
-            { data, link, totalCount },
-            API_RESPONSES.USER_DATA_FETCHED
-          )
-        );
-    }
-  );
+  //     res
+  //       .status(StatusCodes.OK)
+  //       .json(
+  //         new ApiResponse(
+  //           StatusCodes.OK,
+  //           { data, link, totalCount },
+  //           API_RESPONSES.USER_DATA_FETCHED
+  //         )
+  //       );
+  //   }
+  // );
 
   getAllUsers = asyncHandler(
     async (req: AuthenticatedRequest, res: Response) => {
@@ -208,15 +192,15 @@ class AdminController {
     }
   );
 
-  getUserById = asyncHandler(async (req: Request, res: Response) => {
-    const { user_id } = req.params;
-    const user = await this.userService.getById(user_id);
-    return res
-      .status(StatusCodes.OK)
-      .json(
-        new ApiResponse(StatusCodes.OK, user, API_RESPONSES.USER_DATA_FETCHED)
-      );
-  });
+  // getUserById = asyncHandler(async (req: Request, res: Response) => {
+  //   const { user_id } = req.params;
+  //   const user = await this.userService.getById(user_id);
+  //   return res
+  //     .status(StatusCodes.OK)
+  //     .json(
+  //       new ApiResponse(StatusCodes.OK, user, API_RESPONSES.USER_DATA_FETCHED)
+  //     );
+  // });
 
   changesUserStatus = asyncHandler(async (req: Request, res: Response) => {
     const { status, reason } = req.body;

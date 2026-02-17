@@ -1,10 +1,10 @@
+import { StatusCodes } from "http-status-codes";
 import { ApiError } from "common-microservices-utils";
-import { sendMail, sendSms } from "../api/otp.api";
+// import { sendMail, sendSms } from "../api/otp.api";
 import { API_ERRORS, OTP_EXPIRY, STRINGS } from "../constants/app.constant";
 import EmailOtpRepository from "../repositories/emailOtp.repository";
 import SmsOtpRepository from "../repositories/smsOtp.repository";
 import { generateOtp } from "../utils/helper";
-import { StatusCodes } from "http-status-codes";
 import { updateEmailType } from "../types/emailOtp.types";
 import { updateSmsType } from "../types/smsOtp.types";
 
@@ -22,11 +22,11 @@ class OtpService {
     country_code: string
   ) => {
     const otp = generateOtp();
-    await sendSms({
-      mobile_number: phone,
-      country_code: country_code,
-      text: otp,
-    });
+    // await sendSms({
+    //   mobile_number: phone,
+    //   country_code: country_code,
+    //   text: otp,
+    // });
 
     return await this.smsOtpRepository.create({
       so_country_code: country_code,
@@ -38,19 +38,20 @@ class OtpService {
 
   sendEmailOtp = async (user_id: string, email: string) => {
     const otp = generateOtp();
-    const mail = await sendMail({
-      body: otp,
-      subject: STRINGS.ONE_TIME_PASSWORD,
-      type: "otp",
-      email: email,
-    });
+    // const mail = await sendMail({
+    //   body: otp,
+    //   subject: STRINGS.ONE_TIME_PASSWORD,
+    //   type: "otp",
+    //   email: email,
+    // });
 
-    return await this.emailOtpRepository.create({
-      eo_user_id: user_id,
-      eo_token: otp,
-      eo_receiver: email,
-      eo_sender: mail?.data?.data?.mail_sender || "",
-    });
+    // return await this.emailOtpRepository.create({
+    //   eo_user_id: user_id,
+    //   eo_token: otp,
+    //   eo_receiver: email,
+    //   // eo_sender: mail?.data?.data?.mail_sender || "",
+    // });
+    return null;
   };
 
   getPhoneOtp = async (phone: string, otp: string) => {

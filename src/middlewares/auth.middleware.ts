@@ -1,5 +1,3 @@
-import { GetVerificationKey, expressjwt } from "express-jwt";
-import { expressJwtSecret } from "jwks-rsa";
 import {
   API_ERRORS,
   AUTH_SERVICE,
@@ -8,6 +6,8 @@ import {
   STRINGS,
 } from "../constants/app.constant";
 import { NextFunction } from "express";
+import { GetVerificationKey, expressjwt } from "express-jwt";
+import { expressJwtSecret } from "jwks-rsa";
 import { ApiError } from "common-microservices-utils";
 import { StatusCodes } from "http-status-codes";
 import { Role } from "@prisma/client";
