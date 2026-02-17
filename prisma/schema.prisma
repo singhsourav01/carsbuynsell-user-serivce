@@ -1,0 +1,140 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["fullTextSearch", "fullTextIndex"]
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+enum DeviceTypes {
+  ANDROID
+  IOS
+  WEB
+}
+
+enum Role {
+  USER
+  ADMIN
+  BASIC
+  SUPER_ADMIN
+  AGENCY
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+  BOTH
+}
+
+enum model_attributes_type {
+  LOOKS
+  COMPLEXION
+  HAIRS
+  BODYTYPE
+}
+
+enum ApprovalStatus {
+  NONE
+  PENDING
+  APPROVED
+  REJECTED
+  BLOCKED
+  DELETED
+}
+
+enum LocationType {
+  PRIMARY
+  SECONDARY
+}
+
+model users {
+  user_id                    String                    @id @default(uuid()) @map("_id")
+  user_full_name             String?
+  user_gender                Gender                    @default(OTHER)
+  user_primary_phone         String
+  user_email                 String?
+  user_password              String?
+  user_role                  Role                      @default(USER)
+  user_admin_status          ApprovalStatus            @default(NONE)
+  user_email_verified        Boolean?                  @default(false)
+  user_phone_verified        Boolean?                  @default(false)
+  user_created_by_admin      Boolean?                  @default(true)
+  user_bio                   String?
+  user_dob                   DateTime?
+  user_height                String?
+  user_primary_country_id    String?
+  user_active                Boolean?                  @default(true)
+  user_profile_image_file_id String?
+  user_portfolio_pdf_id      String?
+  user_created_at            DateTime                  @default(now())
+  user_updated_at            DateTime                  @updatedAt
+  user_referred_by           String?
+  user_is_deleted            Boolean?                  @default(false)
+  is_first_login             Boolean?                  @default(false)
+  is_private_user            Boolean?                  @default(false)
+  user_managed_by            String?
+  user_login_devices         user_login_devices[]
+  agency                     users?                    @relation("agency_users", fields: [user_managed_by], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@fulltext([user_full_name, user_email])
+}
+
+model sms_otp {
+  so_id           String            @id @default(uuid()) @map("_id")
+  so_user_id      String
+  so_country_code String
+  so_receiver     String
+  so_token        String
+  so_is_expired   Boolean           @default(false)
+  so_created_at   DateTime          @default(now())
+  so_updated_at   DateTime          @updatedAt
+  user_old_phones user_old_phones[]
+}
+
+model email_otp {
+  eo_id           String            @id @default(uuid()) @map("_id")
+  eo_user_id      String
+  eo_sender       String
+  eo_receiver     String
+  eo_token        String
+  eo_is_expired   Boolean           @default(false)
+  eo_created_at   DateTime          @default(now())
+  eo_updated_at   DateTime          @updatedAt
+  user_old_emails user_old_emails[]
+}
+
+model user_old_emails {
+  uoe_id         String    @id @default(uuid()) @map("_id")
+  uoe_user_id    String
+  uoe_eo_id      String
+  uoe_email      String
+  uoe_created_at DateTime  @default(now())
+  uoe_updated_at DateTime  @updatedAt
+  email_otp      email_otp @relation(fields: [uoe_eo_id], references: [eo_id], onDelete: Cascade)
+}
+
+model user_old_phones {
+  uop_id         String   @id @default(uuid()) @map("_id")
+  uop_user_id    String
+  uop_so_id      String
+  uop_phone      String
+  uop_created_at DateTime @default(now())
+  uop_updated_at DateTime @updatedAt
+  sms_otp        sms_otp  @relation(fields: [uop_so_id], references: [so_id], onDelete: Cascade)
+}
+
+model user_login_devices {
+  uld_id            String      @id @default(uuid()) @map("_id")
+  uld_user_id       String
+  uld_fcm_token     String
+  uld_device_name   String
+  uld_device_type   DeviceTypes
+  uld_access_token  String
+  uld_refresh_token String
+  uld_created_at    DateTime    @default(now())
+  uld_updated_at    DateTime    @updatedAt
+  user              users       @relation(fields: [uld_user_id], references: [user_id], onDelete: Cascade)
+}
