@@ -41,6 +41,7 @@ export const API_ENDPOINTS = {
   // USER & PROFILE ENDPOINTS
   BASE: "/user",
   USERS: "/users",
+  CREATE_USER: "/create-user",
   USERS_BY_ID: "/users/:user_id",
   USERS_PROFILE: "/users-profile",
   USER_DETAILS: "/users/details/:user_details",
@@ -49,7 +50,7 @@ export const API_ENDPOINTS = {
   TALENT_DIRECTORY: "/talent-directory",
   USER_CURRENT_LOCATION: "/user-location",
   PHONE_USER: "/phone-users",
-  
+
   // Update/Get sensitive info
   UPDATE_PHONE: "/users/phone",
   UPDATE_EMAIL: "/users/email",
@@ -68,7 +69,7 @@ export const API_ENDPOINTS = {
   SEND_EMAIL_OTP: "/send-email-otp",
   RESET_PASSWORD: "/reset-password/:user_id",
   LOGOUT: "/logout/:uld_id",
-  
+
   // Devices & Notifications
   USER_DEVICE: "/user-device",
   USER_DEVICE_BY_ID: "/user-device/:uld_id",
@@ -82,6 +83,14 @@ export const API_ENDPOINTS = {
   REDIRECT_DEEPLINK: "/link/*",
   APPLE_APP_ASSOCIATION: "/.well-known/apple-app-site-association",
   ASSET_LINK: "/.well-known/assetlinks.json",
+
+  // Home & Category Endpoints
+  HOME: "/home",
+  LISTINGS: "/listings",          // paginated all-listings with optional category/type filter
+  CATEGORY: "/category",
+  CATEGORIES: "/categories",
+  CATEGORY_BY_ID: "/category/:cat_id",
+  CATEGORY_TOGGLE: "/category/:cat_id/toggle",
 };
 
 export const API_RESPONSES = {
@@ -113,6 +122,17 @@ export const API_RESPONSES = {
   ALREADY_REPORTED: "Already Reported",
   ISSUE_TYPES_FETCHED: "Issue types fetched",
   SUBMITTED_SUCCESSFULLY: "Submitted Successfully",
+
+  // Category
+  CATEGORY_CREATED: "Category created successfully",
+  CATEGORY_FETCHED: "Category fetched successfully",
+  CATEGORIES_FETCHED: "Categories fetched successfully",
+  CATEGORY_UPDATED: "Category updated successfully",
+  CATEGORY_DELETED: "Category deleted successfully",
+  CATEGORY_TOGGLED: "Category status toggled successfully",
+
+  LISTINGS_FETCHED: "Listings fetched successfully",
+
 };
 
 export const API_ERRORS = {
@@ -139,6 +159,11 @@ export const API_ERRORS = {
   USER_ALREADY_INVITED: "The user has already been invited",
   USER_EXISTS_WITH_PHONE_EMAIL: "User already exist with same phone & email",
   NO_RECORDS_FOUND: "Unable to find record",
+
+  // Category
+  CATEGORY_NOT_FOUND: "Category not found",
+  CATEGORY_ALREADY_EXISTS: "A category with this name or slug already exists",
+
 };
 
 export const INTEGERS = {

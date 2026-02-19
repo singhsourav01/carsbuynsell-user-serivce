@@ -16,8 +16,11 @@ const orderController = new OrderController();
 // POST /listings        - Create a listing (auth required)
 ListingRoutes.route("/listings")
     .get(listingController.getAll)
-    .post(authUser(), listingController.create);
+    .post(listingController.create);
 
+// GET  /listings/category/:id - Get listings by category (public)
+ListingRoutes.route("/listings/category/:id")
+    .get(listingController.getListingByCategoryId)
 // GET    /listings/:id  - Get listing by ID (public)
 // PATCH  /listings/:id  - Update listing (auth, seller only)
 // DELETE /listings/:id  - Delete listing (auth, seller only)

@@ -6,6 +6,10 @@ import { API_ENDPOINTS } from "../constants/app.constant";
 const UserRoutes = express.Router();
 const userController = new UserController();
 
+
+UserRoutes.route(API_ENDPOINTS.CREATE_USER)
+  .post(userController.create);
+
 UserRoutes.route(API_ENDPOINTS.USERS)
   .get(authUser(), userController.getAllUsers)
   .post(authUser(), userController.getUserByIds);

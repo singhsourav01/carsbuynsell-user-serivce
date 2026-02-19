@@ -33,9 +33,9 @@ class ListingController {
     });
 
     create = asyncHandler(async (req: AuthRequest, res: Response) => {
-        const { user_id } = req.user;
+        // const { user_id } = req.user;
         const dto: CreateListingDTO = req.body;
-        const listing = await this.listingService.create(user_id, dto);
+        const listing = await this.listingService.create("7cc7535e-a808-4c17-b1b7-d07621c430a7", dto);
         return res
             .status(StatusCodes.CREATED)
             .json(new ApiResponse(StatusCodes.CREATED, listing, LISTING_RESPONSES.LISTING_CREATED));
@@ -58,6 +58,15 @@ class ListingController {
         return res
             .status(StatusCodes.OK)
             .json(new ApiResponse(StatusCodes.OK, null, LISTING_RESPONSES.LISTING_DELETED));
+    });
+    getListingByCategoryId = asyncHandler(async (req: Request, res: Response) => {
+        const cat_id = String(req.params.id);
+        const page = parseInt(req.query.page as string) || 1;
+        const take = parseInt(req.query.take as string) || 10;
+        const result = await this.listingService.getListingByCategoryId(cat_id, page, take);
+        return res
+            .status(StatusCodes.OK)
+            .json(new ApiResponse(StatusCodes.OK, result, LISTING_RESPONSES.LISTINGS_FETCHED));
     });
 }
 

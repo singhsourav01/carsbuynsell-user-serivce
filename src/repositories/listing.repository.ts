@@ -101,6 +101,23 @@ class ListingRepository {
         return { listings, count, page, take };
     };
 
+    getListingByCategoryId = async (cat_id: string, page: number, take: number) => {
+        const skip = (page - 1) * take;
+        const [listings, count] = await queryHandler(() =>
+            prisma.$transaction([
+                prisma.listings.findMany({
+                    where: { lst_category_id: cat_id },
+                    select: listingSelect,
+                    take,
+                    skip,
+                    orderBy: { lst_created_at: "desc" },
+                }),
+                prisma.listings.count({ where: { lst_category_id: cat_id } }),
+            ])
+        );
+        return { listings, count, page, take };
+    };
+
     findFeatured = async () => {
         return queryHandler(() =>
             prisma.listings.findMany({

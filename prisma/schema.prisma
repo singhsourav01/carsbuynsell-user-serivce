@@ -190,10 +190,9 @@ model user_login_devices {
 
 model categories {
   cat_id          String     @id @default(uuid()) @map("_id")
-  cat_name        String
-  cat_slug        String     @unique
+  cat_name        String     @unique
+  cat_slug        String     @unique   // URL-friendly slug e.g. "used-cars", "t-permit-vehicles"
   cat_description String?
-  cat_image_url   String?
   cat_is_active   Boolean    @default(true)
   cat_created_at  DateTime   @default(now())
   cat_updated_at  DateTime   @updatedAt

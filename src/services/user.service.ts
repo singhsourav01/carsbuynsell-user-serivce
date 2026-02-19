@@ -42,7 +42,10 @@ class UserService {
     this.userPortfolioRepository = new UserPortfolioRepository();
     this.smsOtpRepository = new SmsOtpRepository();
   }
-
+  create = async (data: createUserType) => {
+    const user = await this.userRepository.create(data);
+    return user;
+  }
   createUser = async (data: createUserType) => {
     const user = await this.userRepository.getByEmailOrPhone(
       data.user_primary_phone,
@@ -65,7 +68,7 @@ class UserService {
           API_ERRORS.USER_EXIST_WITH_PHONE
         );
     }
-    const {  ...rest } = data;
+    const { ...rest } = data;
     return await this.userRepository.create(rest);
   };
 
@@ -206,10 +209,10 @@ class UserService {
     const user = await this.userRepository.create(data);
     if (user_portfolio?.length > INTEGERS.ZERO)
       this.userPortfolioRepository.deleteMany(user?.user_id);
-       user_portfolio &&
+    user_portfolio &&
       user_portfolio.length > INTEGERS.ZERO &&
       (await this.userPortfolioRepository.createMany(user_portfolio));
-   
+
     return await this.userRepository.getById(user.user_id);
   };
 
@@ -226,8 +229,8 @@ class UserService {
       throw new ApiError(
         StatusCodes.BAD_REQUEST,
         API_ERRORS.USER_ALREADY +
-          " " +
-          userExist.user_admin_status.toLowerCase()
+        " " +
+        userExist.user_admin_status.toLowerCase()
       );
 
     if (status === "APPROVED") {

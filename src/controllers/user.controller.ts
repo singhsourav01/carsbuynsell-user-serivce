@@ -32,7 +32,12 @@ class UserController {
     this.otpService = new OtpService();
   }
 
-  create = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {});
+  create = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    const user = await this.userService.create(req.body);
+    return res
+      .status(StatusCodes.CREATED)
+      .json(new ApiResponse(StatusCodes.CREATED, user, API_RESPONSES.USER_CREATED));
+  });
 
   blockUser = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
     const { blocked_user_id } = req.body;
@@ -189,7 +194,7 @@ class UserController {
       if (
         !user ||
         Object.values(user).filter((item) => item !== undefined).length ===
-          INTEGERS.ZERO
+        INTEGERS.ZERO
       ) {
         throw new ApiError(
           StatusCodes.BAD_REQUEST,
@@ -552,7 +557,7 @@ class UserController {
         );
     }
   );
-   // inviteUserEmail = asyncHandler(
+  // inviteUserEmail = asyncHandler(
   //   async (req: AuthenticatedRequest, res: Response) => {
   //     const user = await this.userService.inviteUserEmail(req.body);
   //     return res

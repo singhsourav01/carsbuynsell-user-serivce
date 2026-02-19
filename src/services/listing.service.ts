@@ -87,6 +87,9 @@ class ListingService {
             throw new ApiError(StatusCodes.NOT_FOUND, LISTING_ERRORS.LISTING_NOT_FOUND);
         return this.listingRepository.update(lst_id, data);
     };
+    getListingByCategoryId = async (cat_id: string, page: number, take: number) => {
+        return this.listingRepository.getListingByCategoryId(cat_id, page, take);
+    };
 }
 
 export default ListingService;
