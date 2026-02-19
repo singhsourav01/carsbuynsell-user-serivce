@@ -8,6 +8,8 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ─── Existing Enums ───────────────────────────────────────────────────────────
+
 enum DeviceTypes {
   ANDROID
   IOS
@@ -50,6 +52,38 @@ enum LocationType {
   SECONDARY
 }
 
+// ─── Marketplace Enums ────────────────────────────────────────────────────────
+
+enum ListingType {
+  AUCTION
+  BUY_NOW
+}
+
+enum ListingStatus {
+  DRAFT
+  ACTIVE
+  SOLD
+  EXPIRED
+  CANCELLED
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  REFUNDED
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  EXPIRED
+  CANCELLED
+}
+
+// ─── Existing Models ──────────────────────────────────────────────────────────
+
 model users {
   user_id                    String                    @id @default(uuid()) @map("_id")
   user_full_name             String?
@@ -68,6 +102,7 @@ model users {
   user_primary_country_id    String?
   user_active                Boolean?                  @default(true)
   user_profile_image_file_id String?
+  user_selfie_file_id        String?
   user_portfolio_pdf_id      String?
   user_created_at            DateTime                  @default(now())
   user_updated_at            DateTime                  @updatedAt
@@ -78,6 +113,10 @@ model users {
   user_managed_by            String?
   user_login_devices         user_login_devices[]
   user_portfolio             user_portfolio[]
+  listings                   listings[]
+  bids                       bids[]
+  orders                     orders[]
+  subscriptions              subscriptions[]
   @@fulltext([user_full_name, user_email])
 }
 
@@ -145,4 +184,100 @@ model user_login_devices {
   uld_created_at    DateTime    @default(now())
   uld_updated_at    DateTime    @updatedAt
   user              users       @relation(fields: [uld_user_id], references: [user_id], onDelete: Cascade)
+}
+
+// ─── Marketplace Models ───────────────────────────────────────────────────────
+
+model categories {
+  cat_id          String     @id @default(uuid()) @map("_id")
+  cat_name        String
+  cat_slug        String     @unique
+  cat_description String?
+  cat_image_url   String?
+  cat_is_active   Boolean    @default(true)
+  cat_created_at  DateTime   @default(now())
+  cat_updated_at  DateTime   @updatedAt
+  listings        listings[]
+}
+
+model listings {
+  lst_id            String         @id @default(uuid()) @map("_id")
+  lst_seller_id     String
+  lst_category_id   String
+  lst_title         String
+  lst_description   String?        @db.Text
+  lst_type          ListingType    @default(BUY_NOW)
+  lst_status        ListingStatus  @default(DRAFT)
+  lst_price         Decimal        @db.Decimal(12, 2)
+  lst_current_bid   Decimal?       @db.Decimal(12, 2)
+  lst_min_increment Decimal?       @db.Decimal(12, 2)
+  lst_auction_end   DateTime?
+  lst_is_featured   Boolean        @default(false)
+  lst_bid_count     Int            @default(0)
+  lst_view_count    Int            @default(0)
+  lst_created_at    DateTime       @default(now())
+  lst_updated_at    DateTime       @updatedAt
+  seller            users          @relation(fields: [lst_seller_id], references: [user_id], onDelete: Cascade)
+  category          categories     @relation(fields: [lst_category_id], references: [cat_id])
+  images            listing_images[]
+  bids              bids[]
+  orders            orders[]
+}
+
+model listing_images {
+  limg_id         String   @id @default(uuid()) @map("_id")
+  limg_listing_id String
+  limg_url        String
+  limg_order      Int      @default(0)
+  limg_created_at DateTime @default(now())
+  limg_updated_at DateTime @updatedAt
+  listing         listings @relation(fields: [limg_listing_id], references: [lst_id], onDelete: Cascade)
+}
+
+model bids {
+  bid_id         String   @id @default(uuid()) @map("_id")
+  bid_listing_id String
+  bid_bidder_id  String
+  bid_amount     Decimal  @db.Decimal(12, 2)
+  bid_created_at DateTime @default(now())
+  bid_updated_at DateTime @updatedAt
+  listing        listings @relation(fields: [bid_listing_id], references: [lst_id], onDelete: Cascade)
+  bidder         users    @relation(fields: [bid_bidder_id], references: [user_id], onDelete: Cascade)
+}
+
+model orders {
+  ord_id          String      @id @default(uuid()) @map("_id")
+  ord_buyer_id    String
+  ord_listing_id  String
+  ord_amount      Decimal     @db.Decimal(12, 2)
+  ord_status      OrderStatus @default(PENDING)
+  ord_created_at  DateTime    @default(now())
+  ord_updated_at  DateTime    @updatedAt
+  buyer           users       @relation(fields: [ord_buyer_id], references: [user_id], onDelete: Cascade)
+  listing         listings    @relation(fields: [ord_listing_id], references: [lst_id])
+}
+
+model subscription_plans {
+  sp_id          String          @id @default(uuid()) @map("_id")
+  sp_name        String
+  sp_description String?
+  sp_price       Decimal         @db.Decimal(10, 2)
+  sp_duration    Int             // duration in days
+  sp_is_active   Boolean         @default(true)
+  sp_created_at  DateTime        @default(now())
+  sp_updated_at  DateTime        @updatedAt
+  subscriptions  subscriptions[]
+}
+
+model subscriptions {
+  sub_id         String             @id @default(uuid()) @map("_id")
+  sub_user_id    String
+  sub_plan_id    String
+  sub_status     SubscriptionStatus @default(ACTIVE)
+  sub_starts_at  DateTime           @default(now())
+  sub_expires_at DateTime
+  sub_created_at DateTime           @default(now())
+  sub_updated_at DateTime           @updatedAt
+  user           users              @relation(fields: [sub_user_id], references: [user_id], onDelete: Cascade)
+  plan           subscription_plans @relation(fields: [sub_plan_id], references: [sp_id])
 }

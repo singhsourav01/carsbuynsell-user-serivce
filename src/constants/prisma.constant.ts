@@ -10,9 +10,6 @@ export const userSelect = {
   user_phone_verified: true,
   user_email_verified: true,
   user_profile_image_file_id: true,
-  user_talents: true,
-  user_male_garments: true,
-  user_female_garments: true,
   is_private_user: true,
 };
 
@@ -29,12 +26,7 @@ export const userDeepSelect = {
   user_primary_phone: true,
   user_admin_status: true,
   user_profile_image_file_id: true,
-  user_female_measurements: true,
-  user_male_measurements: true,
-  user_brand_measurements: true,
-  user_current_locations: true,
-  user_male_garments: true,
-  user_female_garments: true,
+  user_selfie_file_id: true,
   is_private_user: true,
   user_portfolio: {
     select: {
