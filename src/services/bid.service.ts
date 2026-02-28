@@ -56,6 +56,9 @@ class BidService {
     getMyBids = async (user_id: string, page: number, take: number) => {
         return this.bidRepository.findByUserId(user_id, page, take);
     };
+    getAllLiveBids = async (page: number, take: number) => {
+        return this.bidRepository.getAllLiveBids(page, take);
+    };
 }
 
 export default BidService;

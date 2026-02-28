@@ -36,6 +36,16 @@ class BidController {
             .status(StatusCodes.OK)
             .json(new ApiResponse(StatusCodes.OK, result, BID_RESPONSES.BIDS_FETCHED));
     });
+
+    getAllLiveBids = asyncHandler(async (req: Request, res: Response) => {
+        const page = Number(req.query.page || "1");
+        const take = Number(req.query.page_size || "10");
+
+        const result = await this.bidService.getAllLiveBids(page, take);
+        return res
+            .status(StatusCodes.OK)
+            .json(new ApiResponse(StatusCodes.OK, result, BID_RESPONSES.BIDS_FETCHED));
+    });
 }
 
 export default BidController;

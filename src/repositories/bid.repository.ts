@@ -99,6 +99,41 @@ class BidRepository {
             });
         });
     };
+
+    getAllLiveBids = async (page: number, take: number) => {
+        const skip = (page - 1) * take;
+
+        const [bids, count] = await queryHandler(() =>
+            prisma.$transaction([
+                prisma.bids.findMany({
+                    where: {
+                        listing: {
+                            lst_type: "AUCTION",
+                            lst_status: "ACTIVE"
+                        }
+                    },
+                    select: bidSelect,
+                    take,
+                    skip,
+                    orderBy: {
+                        bid_amount: "desc"
+                    }
+                }),
+
+                prisma.bids.count({
+                    where: {
+                        listing: {
+                            lst_type: "AUCTION",
+                            lst_status: "ACTIVE"
+                        }
+                    }
+                })
+            ])
+        );
+
+        return { bids, count, page, take };
+    };
+
 }
 
 export default BidRepository;
