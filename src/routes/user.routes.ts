@@ -11,8 +11,8 @@ UserRoutes.route(API_ENDPOINTS.CREATE_USER)
   .post(userController.create);
 
 UserRoutes.route(API_ENDPOINTS.USERS)
-  .get(authUser(), userController.getAllUsers)
-  .post(authUser(), userController.getUserByIds);
+  .get( userController.getAllUsers)
+  .post( userController.getUserByIds);
 
 UserRoutes.route(API_ENDPOINTS.USERS_BY_ID).get(userController.getUserById);
 

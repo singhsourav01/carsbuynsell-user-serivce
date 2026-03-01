@@ -140,46 +140,40 @@ class UserController {
 
   getAllUsers = asyncHandler(
     async (req: AuthenticatedRequest, res: Response) => {
-      // const { search, page, page_size }: any = req.query;
-      // const { user_id } = req.user;
-      // const { blocked_by_ids, blocked_ids } =
-      //   await this.blockAndReportService.getAllBlockedAccounts(user_id);
-      // const data = await this.userService.getAll(
-      //   page,
-      //   page_size,
-      //   search,
-      //   ApprovalStatus.APPROVED,
-      //   API_ENDPOINTS.USERS,
-      //   user_id,
-      //   [...blocked_by_ids, ...blocked_ids],
-      //   req.query
-      // );
+      const { search, page, page_size }: any = req.query;
+      const { user_id } = req.user;
+      const data = await this.userService.getAll(
+        page,
+        page_size,
+        search,
+        ApprovalStatus.APPROVED,
+        API_ENDPOINTS.USERS,
+        user_id,
+      );
 
-      // return res
-      //   .status(StatusCodes.OK)
-      //   .json(
-      //     new ApiResponse(StatusCodes.OK, data, API_RESPONSES.USERS_FETCHED)
-      //   );
+      return res
+        .status(StatusCodes.OK)
+        .json(
+          new ApiResponse(StatusCodes.OK, data, API_RESPONSES.USERS_FETCHED)
+        );
       return null
     }
   );
 
   getUserById = asyncHandler(async (req: Request, res: Response) => {
-    const { self_id }: { self_id?: string } = req.query;
     const { user_id } = req.params;
 
-    // const user = await this.userService.getById(user_id, self_id);
+    const user = await this.userService.getUserById(user_id);
     return res
       .status(StatusCodes.OK)
       .json(
-        new ApiResponse(StatusCodes.OK, "null", API_RESPONSES.USER_DATA_FETCHED)
+        new ApiResponse(StatusCodes.OK, user, API_RESPONSES.USER_DATA_FETCHED)
       );
   });
 
   getUserProfile = asyncHandler(
     async (req: AuthenticatedRequest, res: Response) => {
       const { user_id } = req.user;
-      // const user = await this.userService.getById(user_id);
       return res
         .status(StatusCodes.OK)
         .json(
@@ -592,16 +586,24 @@ class UserController {
 
 
 
-  getUserByIds = asyncHandler(async (req: Request, res: Response) => {
-    const { user_ids } = req.body;
+getUserByIds = asyncHandler(async (req: Request, res: Response) => {
+  const page = req.query.page  || 1;
+  const limit = req.query.limit || 10;
+  const { user_ids} = req.body;
+  const result = await this.userService.getUsersByIds(
+    user_ids,
+    Number(page),
+    Number(limit)
+  );
 
-    // const user = await this.userService.getUsersByIds(user_ids);
-    return res
-      .status(StatusCodes.OK)
-      .json(
-        new ApiResponse(StatusCodes.OK, "user", API_RESPONSES.USER_DATA_FETCHED)
-      );
-  });
+  return res.status(StatusCodes.OK).json(
+    new ApiResponse(
+      StatusCodes.OK,
+      result,
+      API_RESPONSES.USER_DATA_FETCHED
+    )
+  );
+});
 
 
 }

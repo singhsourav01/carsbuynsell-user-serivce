@@ -359,30 +359,31 @@ class UserService {
     });
   };
 
-  // getUsersByIds = async (user_ids: string[]) => {
-  //   const users = await this.userRepository.getUsersByIds(user_ids);
+  getUserById = async (user_id: any) => {
+    const user = await this.userRepository.getById(user_id);  
+    if (!user)     throw new ApiError(StatusCodes.NOT_FOUND, API_ERRORS.USER_NOT_FOUND);
+    return user;
+  }
 
-  //   if (!users?.length) return [];
+getUsersByIds = async (
+  user_ids: string[],
+  page: number,
+  limit: number
+) => {
+  if (!user_ids?.length) {
+    return {
+      users: [],
+      pagination: {
+        total: 0,
+        page,
+        limit,
+        totalPages: 0,
+      },
+    };
+  }
 
-  //   const fileIds = users
-  //     .map((u: any) => u.user_profile_image_file_id)
-  //     .filter(Boolean);
-
-  //   // const files = await getFileByIds(fileIds);
-
-  //   const enrichedUsers = users.map((u: any) => {
-  //     const file = files.find(
-  //       (f: any) => f.file_id === u.user_profile_image_file_id
-  //     );
-
-  //     return {
-  //       ...u,
-  //       user_profile_image: file?.file_url || null,
-  //     };
-  //   });
-
-  //   return enrichedUsers;
-  // };
+  return this.userRepository.getUsersByIds(user_ids, page, limit);
+};
 
   getManageUserByListing = async (user_id: string) => {
     const user = await this.userRepository.getUserByPhone(user_id);

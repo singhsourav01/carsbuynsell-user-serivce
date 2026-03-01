@@ -496,25 +496,47 @@ class UserRepository {
     );
   };
 
-  getUsersByIds = async (ids: string[]) => {
-    return queryHandler(
-      async () =>
-        await prisma.users.findMany({
-          where: {
-            user_id: {
-              in: ids, // Use the 'in' operator to filter by the list of user IDs
-            },
-          },
-          select: {
-            user_bio: true,
-            user_email: true,
-            user_full_name: true,
-            user_profile_image_file_id: true,
-            user_id: true,
-          }, // Select specific fields as per the 'userDeepSelect' object
-        })
-    );
-  };
+getUsersByIds = async (
+  ids: string[],
+  page: number,
+  limit: number
+) => {
+  return queryHandler(async () => {
+    const skip = (page - 1) * limit;
+
+    const [users, total] = await Promise.all([
+      prisma.users.findMany({
+        where: {
+          user_id: { in: ids },
+        },
+        skip,
+        take: limit,
+        select: {
+          user_bio: true,
+          user_email: true,
+          user_full_name: true,
+          user_profile_image_file_id: true,
+          user_id: true,
+        },
+      }),
+      prisma.users.count({
+        where: {
+          user_id: { in: ids },
+        },
+      }),
+    ]);
+
+    return {
+      users,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  });
+};
 
 }
 
