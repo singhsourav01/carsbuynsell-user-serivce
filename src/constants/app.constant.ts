@@ -49,8 +49,8 @@ export const API_ENDPOINTS = {
   FILTER_USER: "/filter-user",
   TALENT_DIRECTORY: "/talent-directory",
   USER_CURRENT_LOCATION: "/user-location",
-  PHONE_USER: "/phone-users",
-
+  PHONE_USER: "/user-phone",
+  EMAIL_USER: "/user-email",
   // Update/Get sensitive info
   UPDATE_PHONE: "/users/phone",
   UPDATE_EMAIL: "/users/email",

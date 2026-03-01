@@ -465,7 +465,20 @@ class UserRepository {
             OR: [
               { user_primary_phone: phone },
             ],
-            NOT: { user_role: Role.ADMIN },
+          },
+        })
+    );
+  };
+
+  
+  getUserByEmail = async (email: string) => {
+    return queryHandler(
+      async () =>
+        await prisma.users.findFirst({
+          where: {
+            OR: [
+              { user_email: email },
+            ],
           },
         })
     );

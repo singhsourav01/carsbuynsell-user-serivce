@@ -125,6 +125,7 @@ class UserService {
     const user = await this.userRepository.update(user_id, data);
     return user;
   };
+  
   updateUser = async (user_id: any, data: updateUserType) => {
     const user = await this.userRepository.getById(user_id);
     const phoneExists = data?.user_primary_phone
@@ -171,8 +172,8 @@ class UserService {
 
     return user;
   };
-  getByPhone = async (user_primary_phone: any) => {
-    const user = await this.userRepository.getByPhone(user_primary_phone);
+  getByPhone = async (user_phone: any) => {
+    const user = await this.userRepository.getByPhone(user_phone);
 
     if (!user)
       throw new ApiError(
@@ -341,13 +342,11 @@ class UserService {
 
   getUserByPhone = async (phone: string) => {
     const user = await this.userRepository.getUserByPhone(phone);
-    if (!user)
-      throw new ApiError(StatusCodes.BAD_REQUEST, API_ERRORS.USER_NOT_FOUND);
-    const userData: any = _.pick(user, getUserByPhonePick);
-    // userData.user_profile_image =
-    //   user.user_profile_image_file_id &&
-    //   (await getFileById(user.user_profile_image_file_id))?.file_url;
-    return userData;
+    return user;
+  };
+  getUserByEmail = async (email: string) => {
+    const user = await this.userRepository.getUserByEmail(email);
+    return user;
   };
 
   getUserFcmTokens = async (user_id: any) => {

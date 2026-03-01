@@ -525,6 +525,24 @@ class UserController {
         new ApiResponse(StatusCodes.OK, user, API_RESPONSES.USER_DATA_FETCHED)
       );
   });
+  getUserBy = asyncHandler(async (req: Request, res: Response) => {
+    const { phone } = req.query;
+    const user = await this.userService.getUserByPhone(String(phone));
+    return res
+      .status(StatusCodes.OK)
+      .json(
+        new ApiResponse(StatusCodes.OK, user, API_RESPONSES.USER_DATA_FETCHED)
+      );
+  });
+  getUserByEmail = asyncHandler(async (req: Request, res: Response) => {
+    const { email } = req.query;
+    const user = await this.userService.getUserByEmail(String(email));
+    return res
+      .status(StatusCodes.OK)
+      .json(
+        new ApiResponse(StatusCodes.OK, user, API_RESPONSES.USER_DATA_FETCHED)
+      );
+  });
 
   getUserFcmTokens = asyncHandler(async (req: Request, res: Response) => {
     const { id } = req.params;

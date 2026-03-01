@@ -95,6 +95,7 @@ UserRoutes.route(API_ENDPOINTS.REPORT_TYPE).get(
 );
 
 UserRoutes.route(API_ENDPOINTS.PHONE_USER).get(userController.getUserByPhone);
+UserRoutes.route(API_ENDPOINTS.EMAIL_USER).get(userController.getUserByEmail);
 
 UserRoutes.route(API_ENDPOINTS.FCM_TOKENS).get(userController.getUserFcmTokens);
 
