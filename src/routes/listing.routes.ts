@@ -4,6 +4,7 @@ import ListingController from "../controllers/listing.controller";
 import ListingImageController from "../controllers/listingImage.controller";
 import BidController from "../controllers/bid.controller";
 import OrderController from "../controllers/order.controller";
+import { authUser } from "../middlewares/auth.middleware";
 
 const ListingRoutes = express.Router();
 const listingController = new ListingController();
@@ -21,13 +22,7 @@ ListingRoutes.route("/listings")
 // GET  /listings/category/:id - Get listings by category (public)
 ListingRoutes.route("/listings/category/:id")
     .get(listingController.getListingByCategoryId)
-// GET    /listings/:id  - Get listing by ID (public)
-// PATCH  /listings/:id  - Update listing (auth, seller only)
-// DELETE /listings/:id  - Delete listing (auth, seller only)
-ListingRoutes.route("/listings/:id")
-    .get(listingController.getById)
-    .patch(listingController.update)
-    .delete(listingController.delete);
+
 
 // ─── Listing Images ───────────────────────────────────────────────────────────
 // POST   /listings/:id/images                       - Add images
@@ -46,6 +41,15 @@ ListingRoutes.get("/listings/live-bids", bidController.getAllLiveBids);
 
 // ─── Buy Now ──────────────────────────────────────────────────────────────────
 // POST /listings/:id/buy - Buy Now (auth + subscription required)
-ListingRoutes.post("/listings/:id/buy", orderController.buyNow);
+ListingRoutes.post("/listings/:id/buy", authUser, orderController.buyNow);
+
+// GET    /listings/:id  - Get listing by ID (public)
+// PATCH  /listings/:id  - Update listing (auth, seller only)
+// DELETE /listings/:id  - Delete listing (auth, seller only)
+ListingRoutes.route("/listings/:id")
+    .get(listingController.getById)
+    .patch(listingController.update)
+    .delete(listingController.delete);
 
 export default ListingRoutes;
+

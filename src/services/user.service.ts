@@ -78,44 +78,26 @@ class UserService {
     search?: string,
     status?: string,
     apiUrl?: string,
-    user_id?: string,
-    blocked?: Array<string>,
-    query?: any
   ) => {
     const pageNumber = Number(page || "1");
     const take = Number(page_size || "10");
     const skip = (pageNumber - INTEGERS.ONE) * take;
+    console.log('inside servide laye"');
     const users = await this.userRepository.getAll(
       take,
       skip,
       search,
       status,
-      user_id,
-      blocked,
-      query
     );
+
     if (users.length === INTEGERS.ZERO)
       throw new ApiError(StatusCodes.NOT_FOUND, API_ERRORS.USERS_NOT_FOUND);
 
-    const userData = await Promise.all(
-      users.map(async (item: any) => {
-        return {
-          user_id: item.user_id,
-          // user_profile_image:
-          //   item.user_profile_image_file_id &&
-          //   (await getFileById(item.user_profile_image_file_id))?.file_url,
-        };
-      })
-    );
 
-    const count = await this.userRepository.count(
-      search,
-      status,
-      user_id,
-      query
-    );
+
+    const count = await this.userRepository.count(search, status);
     const link = getLinkData(pageNumber, take, count, apiUrl);
-    return { data: userData, count, link };
+    return { data: users, count, link };
   };
 
   updateUser1 = async (user_id: string) => {
@@ -125,7 +107,7 @@ class UserService {
     const user = await this.userRepository.update(user_id, data);
     return user;
   };
-  
+
   updateUser = async (user_id: any, data: updateUserType) => {
     const user = await this.userRepository.getById(user_id);
     const phoneExists = data?.user_primary_phone
@@ -164,7 +146,8 @@ class UserService {
       user_details,
       user_details
     );
-
+    console.log(user_details, 'here is user_details')
+    console.log(user, 'here is user')
     if (!user)
       throw new ApiError(StatusCodes.NOT_FOUND, API_ERRORS.USER_NOT_FOUND);
 
@@ -360,30 +343,30 @@ class UserService {
   };
 
   getUserById = async (user_id: any) => {
-    const user = await this.userRepository.getById(user_id);  
-    if (!user)     throw new ApiError(StatusCodes.NOT_FOUND, API_ERRORS.USER_NOT_FOUND);
+    const user = await this.userRepository.getById(user_id);
+    if (!user) throw new ApiError(StatusCodes.NOT_FOUND, API_ERRORS.USER_NOT_FOUND);
     return user;
   }
 
-getUsersByIds = async (
-  user_ids: string[],
-  page: number,
-  limit: number
-) => {
-  if (!user_ids?.length) {
-    return {
-      users: [],
-      pagination: {
-        total: 0,
-        page,
-        limit,
-        totalPages: 0,
-      },
-    };
-  }
+  getUsersByIds = async (
+    user_ids: string[],
+    page: number,
+    limit: number
+  ) => {
+    if (!user_ids?.length) {
+      return {
+        users: [],
+        pagination: {
+          total: 0,
+          page,
+          limit,
+          totalPages: 0,
+        },
+      };
+    }
 
-  return this.userRepository.getUsersByIds(user_ids, page, limit);
-};
+    return this.userRepository.getUsersByIds(user_ids, page, limit);
+  };
 
   getManageUserByListing = async (user_id: string) => {
     const user = await this.userRepository.getUserByPhone(user_id);

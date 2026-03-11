@@ -23,8 +23,13 @@ class UserRepository {
   create = async (data: createUserType) => {
     return queryHandler(
       async () =>
-        await prisma.users.create({
-          data: {
+        await prisma.users.upsert({
+          where: { user_id: (data as any).user_id || "" },
+          create: {
+            ...data,
+            user_gender: data.user_gender ? data.user_gender : Gender.OTHER,
+          },
+          update: {
             ...data,
             user_gender: data.user_gender ? data.user_gender : Gender.OTHER,
           },
@@ -38,60 +43,29 @@ class UserRepository {
     skip: number,
     search?: string,
     status?: string,
-    user_id?: string,
-    blocked_ids?: Array<string>,
-    query?: any
   ) => {
-    const { gender, location, talent } = query;
     const where: any = {
       user_role: Role.USER,
-      user_id: {
-        notIn: blocked_ids,
-      },
+      user_is_deleted: false,
     };
-    if (user_id) {
-      where.NOT = {
-        user_id,
-      };
-    }
+
     if (search) {
       where.OR = [
-        {
-          user_full_name: { contains: search },
-        },
-        {
-          user_email: { contains: search },
-        },
-        {
-          user_primary_phone: { contains: search },
-        },
+        { user_full_name: { contains: search } },
+        { user_email: { contains: search } },
       ];
     }
-    if (gender) {
-      where.user_gender = gender;
-    }
-    if (location) {
-      where.user_locations = {
-        some: {
-          ul_city_id: location,
-        },
-      };
-    }
 
-    if (talent) {
-      where.user_talents = {
-        some: {
-          ut_talent_id: talent,
-        },
-      };
-    }
-
-    if (status) where.user_admin_status = status;
     return queryHandler(
       async () =>
         await prisma.users.findMany({
           where,
-          select: userSelect,
+          select: {
+            user_id: true,
+            user_full_name: true,
+            user_email: true,
+            user_primary_phone: true,
+          },
           take,
           skip,
           orderBy: {
@@ -138,9 +112,7 @@ class UserRepository {
     search?: string,
     status?: string,
     user_id?: string,
-    query?: any
   ) => {
-    const { gender, location, talent } = query;
     const where: any = {
       user_role: Role.USER,
     };
@@ -162,24 +134,7 @@ class UserRepository {
       ];
     }
 
-    if (gender) {
-      where.user_gender = gender;
-    }
-    if (location) {
-      where.user_locations = {
-        some: {
-          ul_city_id: location,
-        },
-      };
-    }
 
-    if (talent) {
-      where.user_talents = {
-        some: {
-          ut_talent_id: talent,
-        },
-      };
-    }
     if (status) where.user_admin_status = status;
     return queryHandler(
       async () =>
@@ -242,6 +197,7 @@ class UserRepository {
     user_primary_phone: string,
     user_email: string
   ) => {
+    console.log(user_primary_phone, user_email, 'here is user_primary_phone and user_email')
     return queryHandler(
       async () =>
         await prisma.users.findFirst({
@@ -470,7 +426,7 @@ class UserRepository {
     );
   };
 
-  
+
   getUserByEmail = async (email: string) => {
     return queryHandler(
       async () =>
@@ -496,47 +452,47 @@ class UserRepository {
     );
   };
 
-getUsersByIds = async (
-  ids: string[],
-  page: number,
-  limit: number
-) => {
-  return queryHandler(async () => {
-    const skip = (page - 1) * limit;
+  getUsersByIds = async (
+    ids: string[],
+    page: number,
+    limit: number
+  ) => {
+    return queryHandler(async () => {
+      const skip = (page - 1) * limit;
 
-    const [users, total] = await Promise.all([
-      prisma.users.findMany({
-        where: {
-          user_id: { in: ids },
-        },
-        skip,
-        take: limit,
-        select: {
-          user_bio: true,
-          user_email: true,
-          user_full_name: true,
-          user_profile_image_file_id: true,
-          user_id: true,
-        },
-      }),
-      prisma.users.count({
-        where: {
-          user_id: { in: ids },
-        },
-      }),
-    ]);
+      const [users, total] = await Promise.all([
+        prisma.users.findMany({
+          where: {
+            user_id: { in: ids },
+          },
+          skip,
+          take: limit,
+          select: {
+            user_bio: true,
+            user_email: true,
+            user_full_name: true,
+            user_profile_image_file_id: true,
+            user_id: true,
+          },
+        }),
+        prisma.users.count({
+          where: {
+            user_id: { in: ids },
+          },
+        }),
+      ]);
 
-    return {
-      users,
-      pagination: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-      },
-    };
-  });
-};
+      return {
+        users,
+        pagination: {
+          total,
+          page,
+          limit,
+          totalPages: Math.ceil(total / limit),
+        },
+      };
+    });
+  };
 
 }
 

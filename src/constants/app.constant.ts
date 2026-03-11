@@ -91,6 +91,9 @@ export const API_ENDPOINTS = {
   CATEGORIES: "/categories",
   CATEGORY_BY_ID: "/category/:cat_id",
   CATEGORY_TOGGLE: "/category/:cat_id/toggle",
+
+  // Dashboard
+  DASHBOARD: "/admin/dashboard",
 };
 
 export const API_RESPONSES = {
@@ -133,6 +136,8 @@ export const API_RESPONSES = {
 
   LISTINGS_FETCHED: "Listings fetched successfully",
 
+  // Dashboard
+  DASHBOARD_FETCHED: "Dashboard data fetched successfully",
 };
 
 export const API_ERRORS = {

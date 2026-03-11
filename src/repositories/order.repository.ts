@@ -75,6 +75,17 @@ class OrderRepository {
                 });
                 if (existingOrder) throw new Error("ALREADY_PURCHASED");
 
+                // Check subscription uses (within the same transaction)
+                const subscription = await tx.subscriptions.findFirst({
+                    where: {
+                        sub_user_id: buyer_id,
+                        sub_status: "ACTIVE",
+                        sub_expires_at: { gt: new Date() },
+                        sub_remaining_uses: { gt: 0 },
+                    },
+                });
+                if (!subscription) throw new Error("USES_EXHAUSTED");
+
                 // Create order
                 const order = await tx.orders.create({
                     data: {
@@ -90,6 +101,16 @@ class OrderRepository {
                 await tx.listings.update({
                     where: { lst_id: listing_id },
                     data: { lst_status: "SOLD" },
+                });
+
+                // Decrement subscription uses; expire if reaches 0
+                const newUses = subscription.sub_remaining_uses - 1;
+                await tx.subscriptions.update({
+                    where: { sub_id: subscription.sub_id },
+                    data: {
+                        sub_remaining_uses: newUses,
+                        ...(newUses === 0 && { sub_status: "EXPIRED" }),
+                    },
                 });
 
                 return order;

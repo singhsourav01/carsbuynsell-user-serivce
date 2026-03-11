@@ -71,6 +71,17 @@ class BidRepository {
                     throw new Error("BID_TOO_LOW");
                 }
 
+                // Check subscription uses (within the same transaction)
+                const subscription = await tx.subscriptions.findFirst({
+                    where: {
+                        sub_user_id: bidder_id,
+                        sub_status: "ACTIVE",
+                        sub_expires_at: { gt: new Date() },
+                        sub_remaining_uses: { gt: 0 },
+                    },
+                });
+                if (!subscription) throw new Error("USES_EXHAUSTED");
+
                 // Create bid record
                 const bid = await tx.bids.create({
                     data: {
@@ -95,6 +106,16 @@ class BidRepository {
                     },
                 });
 
+                // Decrement subscription uses; expire if reaches 0
+                const newUses = subscription.sub_remaining_uses - 1;
+                await tx.subscriptions.update({
+                    where: { sub_id: subscription.sub_id },
+                    data: {
+                        sub_remaining_uses: newUses,
+                        ...(newUses === 0 && { sub_status: "EXPIRED" }),
+                    },
+                });
+
                 return bid;
             });
         });
@@ -102,7 +123,6 @@ class BidRepository {
 
     getAllLiveBids = async (page: number, take: number) => {
         const skip = (page - 1) * take;
-
         const [bids, count] = await queryHandler(() =>
             prisma.$transaction([
                 prisma.bids.findMany({

@@ -269,14 +269,17 @@ model subscription_plans {
 }
 
 model subscriptions {
-  sub_id         String             @id @default(uuid()) @map("_id")
-  sub_user_id    String
-  sub_plan_id    String
-  sub_status     SubscriptionStatus @default(ACTIVE)
-  sub_starts_at  DateTime           @default(now())
-  sub_expires_at DateTime
-  sub_created_at DateTime           @default(now())
-  sub_updated_at DateTime           @updatedAt
-  user           users              @relation(fields: [sub_user_id], references: [user_id], onDelete: Cascade)
-  plan           subscription_plans @relation(fields: [sub_plan_id], references: [sp_id])
+  sub_id                  String             @id @default(uuid()) @map("_id")
+  sub_user_id             String
+  sub_plan_id             String
+  sub_status              SubscriptionStatus @default(ACTIVE)
+  sub_starts_at           DateTime           @default(now())
+  sub_expires_at          DateTime
+  sub_remaining_uses      Int                @default(3)
+  sub_razorpay_order_id   String?            @unique
+  sub_razorpay_payment_id String?
+  sub_created_at          DateTime           @default(now())
+  sub_updated_at          DateTime           @updatedAt
+  user                    users              @relation(fields: [sub_user_id], references: [user_id], onDelete: Cascade)
+  plan                    subscription_plans @relation(fields: [sub_plan_id], references: [sp_id])
 }

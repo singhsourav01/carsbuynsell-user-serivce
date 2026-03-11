@@ -11,8 +11,8 @@ UserRoutes.route(API_ENDPOINTS.CREATE_USER)
   .post(userController.create);
 
 UserRoutes.route(API_ENDPOINTS.USERS)
-  .get( userController.getAllUsers)
-  .post( userController.getUserByIds);
+  .get(userController.getAllUsers)
+  .post(userController.getUserByIds);
 
 UserRoutes.route(API_ENDPOINTS.USERS_BY_ID).get(userController.getUserById);
 
@@ -64,7 +64,7 @@ UserRoutes.route(API_ENDPOINTS.USER_DEVICE_BY_ID).get(
 UserRoutes.route(API_ENDPOINTS.USER_DEVICE_BY_ID).put(
   userController.updateUserDevice
 );
-//get verify user
+
 UserRoutes.route(API_ENDPOINTS.VERIFY_USER_GET).get(
   auth(),
   userController.getVerifyUser

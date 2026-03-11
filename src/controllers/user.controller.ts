@@ -141,14 +141,13 @@ class UserController {
   getAllUsers = asyncHandler(
     async (req: AuthenticatedRequest, res: Response) => {
       const { search, page, page_size }: any = req.query;
-      const { user_id } = req.user;
+      console.log(search, page, page_size, 'here is search, page, page_size')
       const data = await this.userService.getAll(
         page,
         page_size,
         search,
         ApprovalStatus.APPROVED,
         API_ENDPOINTS.USERS,
-        user_id,
       );
 
       return res
@@ -156,7 +155,6 @@ class UserController {
         .json(
           new ApiResponse(StatusCodes.OK, data, API_RESPONSES.USERS_FETCHED)
         );
-      return null
     }
   );
 
@@ -586,24 +584,24 @@ class UserController {
 
 
 
-getUserByIds = asyncHandler(async (req: Request, res: Response) => {
-  const page = req.query.page  || 1;
-  const limit = req.query.limit || 10;
-  const { user_ids} = req.body;
-  const result = await this.userService.getUsersByIds(
-    user_ids,
-    Number(page),
-    Number(limit)
-  );
+  getUserByIds = asyncHandler(async (req: Request, res: Response) => {
+    const page = req.query.page || 1;
+    const limit = req.query.limit || 10;
+    const { user_ids } = req.body;
+    const result = await this.userService.getUsersByIds(
+      user_ids,
+      Number(page),
+      Number(limit)
+    );
 
-  return res.status(StatusCodes.OK).json(
-    new ApiResponse(
-      StatusCodes.OK,
-      result,
-      API_RESPONSES.USER_DATA_FETCHED
-    )
-  );
-});
+    return res.status(StatusCodes.OK).json(
+      new ApiResponse(
+        StatusCodes.OK,
+        result,
+        API_RESPONSES.USER_DATA_FETCHED
+      )
+    );
+  });
 
 
 }

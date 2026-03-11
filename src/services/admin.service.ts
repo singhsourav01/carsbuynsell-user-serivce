@@ -18,7 +18,6 @@ class AdminService {
     search?: string,
     status?: string,
     apiUrl?: string,
-    user_id?: string
   ) => {
     const pageNumber = Number(page || "1");
     const take = Number(page_size || "10");
@@ -28,7 +27,6 @@ class AdminService {
       skip,
       search,
       status,
-      user_id
     );
     if (users.length === INTEGERS.ZERO)
       throw new ApiError(StatusCodes.NOT_FOUND, API_ERRORS.USERS_NOT_FOUND);
@@ -42,7 +40,7 @@ class AdminService {
       })
     );
 
-    const count = await this.userRepository.count(search, status, user_id);
+    const count = await this.userRepository.count(search, status);
     const link = getLinkData(pageNumber, take, count, apiUrl);
     return { data: userData, count, link };
   };

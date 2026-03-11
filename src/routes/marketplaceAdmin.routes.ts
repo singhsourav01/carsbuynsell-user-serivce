@@ -1,9 +1,16 @@
 import express from "express";
 import { authAdmin } from "../middlewares/auth.middleware";
 import MarketplaceAdminController from "../controllers/marketplaceAdmin.controller";
+import DashboardController from "../controllers/dashboard.controller";
+import { API_ENDPOINTS } from "../constants/app.constant";
 
 const MarketplaceAdminRoutes = express.Router();
 const adminController = new MarketplaceAdminController();
+const dashboardController = new DashboardController();
+
+// ─── Dashboard ────────────────────────────────────────────────────────────────
+// GET /admin/dashboard - Aggregated stats + recent sells
+MarketplaceAdminRoutes.get(API_ENDPOINTS.DASHBOARD, dashboardController.getDashboard);
 
 // ─── User Management ──────────────────────────────────────────────────────────
 // GET   /admin/users          - Get all users

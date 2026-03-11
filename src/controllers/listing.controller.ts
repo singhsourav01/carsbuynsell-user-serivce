@@ -26,6 +26,7 @@ class ListingController {
 
     getById = asyncHandler(async (req: Request, res: Response) => {
         const lst_id = String(req.params.id);
+        console.log('inside this"')
         const listing = await this.listingService.getById(lst_id);
         return res
             .status(StatusCodes.OK)
@@ -33,9 +34,9 @@ class ListingController {
     });
 
     create = asyncHandler(async (req: AuthRequest, res: Response) => {
-        // const { user_id } = req.user;
+        const { seller_id } = req.query;
         const dto: CreateListingDTO = req.body;
-        const listing = await this.listingService.create("7cc7535e-a808-4c17-b1b7-d07621c430a7", dto);
+        const listing = await this.listingService.create(seller_id as string, dto);
         return res
             .status(StatusCodes.CREATED)
             .json(new ApiResponse(StatusCodes.CREATED, listing, LISTING_RESPONSES.LISTING_CREATED));
