@@ -1,6 +1,8 @@
+import { ApiError } from "common-microservices-utils";
 import prisma from "../configs/prisma.config";
 import { bidSelect } from "../constants/bid.constant";
 import { queryHandler } from "../utils/helper";
+import { StatusCodes } from "http-status-codes";
 
 class BidRepository {
     findByListingId = async (listing_id: string, page: number, take: number) => {
@@ -53,14 +55,14 @@ class BidRepository {
                     where: { lst_id: listing_id },
                 });
 
-                if (!listing) throw new Error("LISTING_NOT_FOUND");
-                if (listing.lst_status !== "ACTIVE") throw new Error("LISTING_NOT_ACTIVE");
-                if (listing.lst_type !== "AUCTION") throw new Error("LISTING_NOT_AUCTION");
+                if (!listing) throw new ApiError(StatusCodes.NOT_FOUND, "LISTING NOT FOUND");
+                if (listing.lst_status !== "ACTIVE") throw new ApiError(StatusCodes.BAD_REQUEST, "LISTING NOT ACTIVE");
+                if (listing.lst_type !== "AUCTION") throw new ApiError(StatusCodes.BAD_REQUEST, "LISTING NOT AUCTION");
                 if (listing.lst_auction_end && listing.lst_auction_end < new Date()) {
-                    throw new Error("AUCTION_ENDED");
+                    throw new ApiError(StatusCodes.BAD_REQUEST, "AUCTION ENDED");
                 }
                 if (listing.lst_seller_id === bidder_id) {
-                    throw new Error("CANNOT_BID_OWN_LISTING");
+                    throw new ApiError(StatusCodes.BAD_REQUEST, "CANNOT BID OWN LISTING");
                 }
 
                 const currentBid = Number(listing.lst_current_bid ?? listing.lst_price);
@@ -68,7 +70,7 @@ class BidRepository {
                 const minimumBid = currentBid + minIncrement;
 
                 if (bid_amount <= currentBid || bid_amount < minimumBid) {
-                    throw new Error("BID_TOO_LOW");
+                    throw new ApiError(StatusCodes.BAD_REQUEST, "BID TOO LOW");
                 }
 
                 // Check subscription uses (within the same transaction)
@@ -80,7 +82,7 @@ class BidRepository {
                         sub_remaining_uses: { gt: 0 },
                     },
                 });
-                if (!subscription) throw new Error("USES_EXHAUSTED");
+                if (!subscription) throw new ApiError(StatusCodes.BAD_REQUEST, "USES EXHAUSTED");
 
                 // Create bid record
                 const bid = await tx.bids.create({

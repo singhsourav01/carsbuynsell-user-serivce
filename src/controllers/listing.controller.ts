@@ -34,9 +34,9 @@ class ListingController {
     });
 
     create = asyncHandler(async (req: AuthRequest, res: Response) => {
-        const { seller_id } = req.query;
+        const { user_id } = req.user;
         const dto: CreateListingDTO = req.body;
-        const listing = await this.listingService.create(seller_id as string, dto);
+        const listing = await this.listingService.create(user_id as string, dto);
         return res
             .status(StatusCodes.CREATED)
             .json(new ApiResponse(StatusCodes.CREATED, listing, LISTING_RESPONSES.LISTING_CREATED));

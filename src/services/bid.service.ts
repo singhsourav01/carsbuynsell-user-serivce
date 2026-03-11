@@ -20,6 +20,7 @@ class BidService {
 
     placeBid = async (listing_id: string, bidder_id: string, bid_amount: number) => {
         // 1. Validate active subscription
+        console.log(bidder_id, " here is active bidder");
         const subscription = await this.subscriptionRepository.findActiveByUserId(bidder_id);
         if (!subscription)
             throw new ApiError(StatusCodes.FORBIDDEN, SUBSCRIPTION_ERRORS.SUBSCRIPTION_NOT_FOUND);

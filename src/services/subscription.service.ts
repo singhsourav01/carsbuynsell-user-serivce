@@ -51,7 +51,7 @@ class SubscriptionService {
             currency: "INR",
             notes: { user_id, plan_id },
         });
-
+        console.log(razorpayOrder, " here is entire details of razorpayOrder");
         // Store pending subscription in DB
         const expires_at = addDays(new Date(), plan.sp_duration);
         await this.subscriptionRepository.createPendingSubscription(

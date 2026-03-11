@@ -17,10 +17,10 @@ class BidController {
 
     placeBid = asyncHandler(async (req: AuthRequest, res: Response) => {
         const listing_id = String(req.params.id);
-        // const { user_id } = req.user;
+        const { user_id } = req.user;
         const { bid_amount } = req.body;
 
-        const bid = await this.bidService.placeBid(listing_id, "7cc7535e-a808-4c17-b1b7-d07621c430a7", Number(bid_amount));
+        const bid = await this.bidService.placeBid(listing_id, user_id, Number(bid_amount));
         return res
             .status(StatusCodes.CREATED)
             .json(new ApiResponse(StatusCodes.CREATED, bid, BID_RESPONSES.BID_PLACED));

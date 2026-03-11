@@ -34,7 +34,7 @@ class ListingService {
             lst_description: dto.lst_description,
             lst_type: dto.lst_type,
             lst_price: dto.lst_price,
-            lst_status: "DRAFT",
+            lst_status: "ACTIVE",
         };
 
         if (dto.lst_type === "AUCTION") {
