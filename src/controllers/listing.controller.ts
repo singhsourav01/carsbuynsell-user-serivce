@@ -34,7 +34,7 @@ class ListingController {
     });
 
     create = asyncHandler(async (req: AuthRequest, res: Response) => {
-        const { user_id } = req.user;
+        const user_id = req.params.user_id;
         const dto: CreateListingDTO = req.body;
         const listing = await this.listingService.create(user_id as string, dto);
         return res
@@ -44,9 +44,9 @@ class ListingController {
 
     update = asyncHandler(async (req: AuthRequest, res: Response) => {
         const lst_id = String(req.params.id);
-        const { user_id } = req.user;
+        const user_id = req.params.user_id;
         const dto: UpdateListingDTO = req.body;
-        const listing = await this.listingService.update(lst_id, user_id, dto);
+        const listing = await this.listingService.update(lst_id, user_id as string, dto);
         return res
             .status(StatusCodes.OK)
             .json(new ApiResponse(StatusCodes.OK, listing, LISTING_RESPONSES.LISTING_UPDATED));
