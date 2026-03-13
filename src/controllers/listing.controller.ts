@@ -34,8 +34,8 @@ class ListingController {
     });
 
     create = asyncHandler(async (req: AuthRequest, res: Response) => {
-        console.log("Creating listing with body:", req.body, req.params);
-        const user_id = req.params.user_id;
+        console.log("Creating listing with body:", req.body, req.query);
+        const user_id = req.query.user_id;
         const dto: CreateListingDTO = req.body;
         const listing = await this.listingService.create(user_id as string, dto);
         return res
