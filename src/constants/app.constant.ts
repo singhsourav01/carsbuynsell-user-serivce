@@ -202,7 +202,7 @@ export const EUREKA = {
 };
 export const AUTH_SERVICE = "http://13.201.55.131:3001/auth/.well-known/jwks.json";
 // export const AUTH_SERVICE =
-//   "http://localhost:8000/auth";
+//   "http://localhost:13.201.55.131/auth";
 
 // export const JWKS_FOLDER = "/.well-known/jwks.json";
 
