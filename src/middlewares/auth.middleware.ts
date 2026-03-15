@@ -24,6 +24,8 @@ export const authUser = () => {
       requestProperty: STRINGS.USER,
     })(req, res, (err) => {
       if (err) next(err);
+      console.log("Authenticated user:", req.user);
+      console.log("User role:", req.user?.role, ROLES.USER);
       if (req.user?.role !== ROLES.USER) {
         return next(
           new ApiError(
