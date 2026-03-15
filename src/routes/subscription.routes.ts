@@ -13,7 +13,7 @@ const subscriptionController = new SubscriptionController();
 
 SubscriptionRoutes.get("/subscriptions/plans", subscriptionController.getPlans);
 SubscriptionRoutes.get("/subscriptions/me", subscriptionController.getMySubscription);
-SubscriptionRoutes.post("/subscriptions/create-order", authUser, subscriptionController.createOrder);
-SubscriptionRoutes.post("/subscriptions/verify-payment", authUser, subscriptionController.verifyPayment);
+SubscriptionRoutes.post("/subscriptions/create-order", authUser(), subscriptionController.createOrder);
+SubscriptionRoutes.post("/subscriptions/verify-payment", authUser(), subscriptionController.verifyPayment);
 
 export default SubscriptionRoutes;
