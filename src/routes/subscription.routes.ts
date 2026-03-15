@@ -12,7 +12,7 @@ const subscriptionController = new SubscriptionController();
 // POST /subscriptions/verify-payment  - Step 2: Verify payment & activate sub (auth required)
 
 SubscriptionRoutes.get("/subscriptions/plans", subscriptionController.getPlans);
-SubscriptionRoutes.get("/subscriptions/me", authUser, subscriptionController.getMySubscription);
+SubscriptionRoutes.get("/subscriptions/me", authUser(), subscriptionController.getMySubscription);
 SubscriptionRoutes.post("/subscriptions/create-order", authUser(), subscriptionController.createOrder);
 SubscriptionRoutes.post("/subscriptions/verify-payment", authUser(), subscriptionController.verifyPayment);
 
