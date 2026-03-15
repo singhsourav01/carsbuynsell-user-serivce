@@ -200,11 +200,11 @@ export const EUREKA = {
   DATA_CENTER_CLASS: "com.netflix.appinfo.InstanceInfo$DefaultDataCenterInfo",
   DATA_CENTER_NAME: "MyOwn",
 };
+export const AUTH_SERVICE = "http://localhost:8000/auth/.well-known/jwks.json";
+// export const AUTH_SERVICE =
+//   "http://localhost:8000/auth";
 
-export const AUTH_SERVICE =
-  "http://ec2-3-6-195-112.ap-south-1.compute.amazonaws.com:8080/auth";
-
-export const JWKS_FOLDER = "/.well-known/jwks.json";
+// export const JWKS_FOLDER = "/.well-known/jwks.json";
 
 export const OTP_DIGITS = 6;
 

@@ -51,15 +51,13 @@ export const getLinkData = (
 
   const next =
     currentPage < totalPages
-      ? `${API_URL}${apiLink}?page=${
-          currentPage + 1
-        }&page_size=${pageSize}${params}`
+      ? `${API_URL}${apiLink}?page=${currentPage + 1
+      }&page_size=${pageSize}${params}`
       : null;
   const prev =
     currentPage > 1 && currentPage - 1 < totalPages
-      ? `${API_URL}${apiLink}?page=${
-          currentPage - 1
-        }&page_size=${pageSize}${params}`
+      ? `${API_URL}${apiLink}?page=${currentPage - 1
+      }&page_size=${pageSize}${params}`
       : null;
 
   return {

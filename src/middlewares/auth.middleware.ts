@@ -1,7 +1,7 @@
 import {
   API_ERRORS,
   AUTH_SERVICE,
-  JWKS_FOLDER,
+  // JWKS_FOLDER,
   ROLES,
   STRINGS,
 } from "../constants/app.constant";
@@ -13,17 +13,18 @@ import { StatusCodes } from "http-status-codes";
 import { Role } from "@prisma/client";
 
 export const authUser = () => {
+  console.log("AUTH_SERVICE URL:", AUTH_SERVICE);
   return (req: any, res: any, next: NextFunction) => {
     return expressjwt({
       secret: expressJwtSecret({
-        jwksUri: AUTH_SERVICE + JWKS_FOLDER,
+        jwksUri: AUTH_SERVICE ,
         cache: true,
         rateLimit: true,
       }) as GetVerificationKey,
       algorithms: ["RS256"],
       requestProperty: STRINGS.USER,
     })(req, res, (err) => {
-      if (err) next(err);
+      if (err) return next(err);
       console.log("Authenticated user:", req.user);
       console.log("User role:", req.user?.role, ROLES.USER);
       if (req.user?.role !== ROLES.USER) {
@@ -43,14 +44,14 @@ export const authAdmin = () => {
   return (req: any, res: any, next: NextFunction) => {
     return expressjwt({
       secret: expressJwtSecret({
-        jwksUri: AUTH_SERVICE + JWKS_FOLDER,
+        jwksUri: AUTH_SERVICE ,
         cache: true,
         rateLimit: true,
       }) as GetVerificationKey,
       algorithms: ["RS256"],
       requestProperty: STRINGS.USER,
     })(req, res, (err) => {
-      if (err) next(err);
+      if (err) return next(err);
       if (
         req.user?.role !== ROLES.ADMIN &&
         req.user?.role !== Role.SUPER_ADMIN
@@ -71,14 +72,14 @@ export const auth = () => {
   return (req: any, res: any, next: NextFunction) => {
     return expressjwt({
       secret: expressJwtSecret({
-        jwksUri: AUTH_SERVICE + JWKS_FOLDER,
+        jwksUri: AUTH_SERVICE ,
         cache: true,
         rateLimit: true,
       }) as GetVerificationKey,
       algorithms: ["RS256"],
       requestProperty: STRINGS.USER,
     })(req, res, (err) => {
-      if (err) next(err);
+      if (err) return next(err);
       next();
     });
   };
