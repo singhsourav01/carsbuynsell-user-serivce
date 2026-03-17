@@ -35,13 +35,13 @@ ListingRoutes.patch("/listings/:id/images/:imageId/reorder", listingImageControl
 // ─── Bidding ──────────────────────────────────────────────────────────────────
 // POST /listings/:id/bid   - Place a bid (auth + subscription required)
 // GET  /listings/:id/bids  - Get bids for a listing (public)
-ListingRoutes.post("/listings/:id/bid", authUser, bidController.placeBid);
-ListingRoutes.get("/listings/:id/bids", authUser,  bidController.getBidsByListing);
-ListingRoutes.get("/listings/live-bids",authUser,  bidController.getAllLiveBids);
+ListingRoutes.post("/listings/:id/bid", authUser(), bidController.placeBid);
+ListingRoutes.get("/listings/:id/bids", authUser(),  bidController.getBidsByListing);
+ListingRoutes.get("/listings/live-bids",authUser(),  bidController.getAllLiveBids);
 
 // ─── Buy Now ──────────────────────────────────────────────────────────────────
 // POST /listings/:id/buy - Buy Now (auth + subscription required)
-ListingRoutes.post("/listings/:id/buy", authUser, orderController.buyNow);
+ListingRoutes.post("/listings/:id/buy", authUser(), orderController.buyNow);
 
 // GET    /listings/:id  - Get listing by ID (public)
 // PATCH  /listings/:id  - Update listing (auth, seller only)
