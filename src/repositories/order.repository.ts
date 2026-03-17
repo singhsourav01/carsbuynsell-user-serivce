@@ -4,6 +4,8 @@ import { orderSelect } from "../constants/order.constant";
 import { SUBSCRIPTION_LIMIT } from "../constants/subscription.constant";
 import { queryHandler } from "../utils/helper";
 import { startOfDay } from "date-fns";
+import { ApiError } from "common-microservices-utils";
+import { StatusCodes } from "http-status-codes";
 
 class OrderRepository {
     findByBuyerId = async (buyer_id: string, page: number, take: number) => {
@@ -63,10 +65,10 @@ class OrderRepository {
                     where: { lst_id: listing_id },
                 });
 
-                if (!listing) throw new Error("LISTING_NOT_FOUND");
-                if (listing.lst_status !== "ACTIVE") throw new Error("LISTING_NOT_ACTIVE");
-                if (listing.lst_type !== "BUY_NOW") throw new Error("LISTING_NOT_BUY_NOW");
-                if (listing.lst_seller_id === buyer_id) throw new Error("CANNOT_BUY_OWN_LISTING");
+                if (!listing) throw new ApiError(StatusCodes.BAD_REQUEST, "LISTING_NOT_FOUND");
+                if (listing.lst_status !== "ACTIVE") throw new ApiError(StatusCodes.BAD_REQUEST, "LISTING_NOT_ACTIVE");
+                if (listing.lst_type !== "BUY_NOW") throw new ApiError(StatusCodes.BAD_REQUEST, "LISTING_NOT_BUY_NOW");
+                if (listing.lst_seller_id === buyer_id) throw new ApiError(StatusCodes.BAD_REQUEST, "CANNOT_BUY_OWN_LISTING");
 
                 // Check no existing confirmed order
                 const existingOrder = await tx.orders.findFirst({
@@ -75,7 +77,7 @@ class OrderRepository {
                         ord_status: { not: OrderStatus.CANCELLED },
                     },
                 });
-                if (existingOrder) throw new Error("ALREADY_PURCHASED");
+                if (existingOrder) throw new ApiError(StatusCodes.BAD_REQUEST, "ALREADY_PURCHASED");
 
                 // Check subscription uses (within the same transaction)
                 const subscription = await tx.subscriptions.findFirst({
@@ -85,7 +87,7 @@ class OrderRepository {
                         sub_expires_at: { gt: new Date() },
                     },
                 });
-                if (!subscription) throw new Error("USES_EXHAUSTED");
+                if (!subscription) throw new ApiError(StatusCodes.BAD_REQUEST, "USES_EXHAUSTED");
 
                 const today = startOfDay(new Date());
                 const resetDate = startOfDay(new Date(subscription.sub_daily_uses_reset_date));
@@ -105,7 +107,7 @@ class OrderRepository {
 
                 // Check if daily uses are exhausted
                 if (remainingUses <= 0) {
-                    throw new Error("DAILY_USES_EXHAUSTED");
+                    throw new ApiError("DAILY_USES_EXHAUSTED");
                 }
 
                 // Create order
