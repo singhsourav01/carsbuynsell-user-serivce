@@ -1,13 +1,14 @@
 export const SUBSCRIPTION_PRICE = 10000; // Fixed price in INR (rupees)
-export const SUBSCRIPTION_LIMIT = 3;      // Max bid/buy actions per subscription
+export const SUBSCRIPTION_LIMIT = 3;      // Max bid/buy actions per day
 
 export const SUBSCRIPTION_ERRORS = {
     PLAN_NOT_FOUND: "Subscription plan not found",
     SUBSCRIPTION_NOT_FOUND: "No active subscription found",
-    ALREADY_SUBSCRIBED: "You already have an active subscription",
+    ALREADY_SUBSCRIBED: "You already have an active subscription with daily uses remaining",
     PAYMENT_FAILED: "Payment verification failed",
     INVALID_SIGNATURE: "Invalid payment signature",
     USES_EXHAUSTED: "Your subscription has no remaining uses",
+    DAILY_USES_EXHAUSTED: "Daily limit of 3 actions exhausted. Please purchase a new subscription",
     PENDING_SUB_NOT_FOUND: "No pending subscription found for this order",
 };
 

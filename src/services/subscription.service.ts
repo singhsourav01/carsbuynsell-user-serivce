@@ -27,14 +27,9 @@ class SubscriptionService {
         return this.subscriptionRepository.findPlans();
     };
 
-    /**
-     * Step 1: Create a Razorpay order and a PENDING subscription record.
-     * Returns order info for the frontend to trigger Razorpay checkout.
-     */
     createPaymentOrder = async (user_id: string, plan_id: string) => {
-        // Block if already has an active subscription
-        const existing = await this.subscriptionRepository.findActiveByUserId(user_id);
-        if (existing)
+        const canPurchase = await this.subscriptionRepository.canPurchaseSubscription(user_id);
+        if (!canPurchase)
             throw new ApiError(StatusCodes.CONFLICT, SUBSCRIPTION_ERRORS.ALREADY_SUBSCRIBED);
 
         // Validate plan
@@ -42,10 +37,8 @@ class SubscriptionService {
         if (!plan)
             throw new ApiError(StatusCodes.NOT_FOUND, SUBSCRIPTION_ERRORS.PLAN_NOT_FOUND);
 
-        // Enforce fixed price
         const amountInPaise = SUBSCRIPTION_PRICE * 100; // Razorpay uses paise
 
-        // Create Razorpay order
         const razorpayOrder = await razorpay.orders.create({
             amount: amountInPaise,
             currency: "INR",

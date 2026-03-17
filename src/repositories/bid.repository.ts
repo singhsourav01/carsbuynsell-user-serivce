@@ -1,8 +1,10 @@
 import { ApiError } from "common-microservices-utils";
 import prisma from "../configs/prisma.config";
 import { bidSelect } from "../constants/bid.constant";
+import { SUBSCRIPTION_LIMIT } from "../constants/subscription.constant";
 import { queryHandler } from "../utils/helper";
 import { StatusCodes } from "http-status-codes";
+import { startOfDay } from "date-fns";
 
 class BidRepository {
     findByListingId = async (listing_id: string, page: number, take: number) => {
@@ -79,10 +81,30 @@ class BidRepository {
                         sub_user_id: bidder_id,
                         sub_status: "ACTIVE",
                         sub_expires_at: { gt: new Date() },
-                        sub_remaining_uses: { gt: 0 },
                     },
                 });
                 if (!subscription) throw new ApiError(StatusCodes.BAD_REQUEST, "USES EXHAUSTED");
+
+                const today = startOfDay(new Date());
+                const resetDate = startOfDay(new Date(subscription.sub_daily_uses_reset_date));
+                let remainingUses = subscription.sub_remaining_uses;
+
+                // If reset date is before today, reset daily uses
+                if (resetDate < today) {
+                    await tx.subscriptions.update({
+                        where: { sub_id: subscription.sub_id },
+                        data: {
+                            sub_remaining_uses: SUBSCRIPTION_LIMIT,
+                            sub_daily_uses_reset_date: new Date(),
+                        },
+                    });
+                    remainingUses = SUBSCRIPTION_LIMIT;
+                }
+
+                // Check if daily uses are exhausted
+                if (remainingUses <= 0) {
+                    throw new ApiError(StatusCodes.BAD_REQUEST, "DAILY USES EXHAUSTED");
+                }
 
                 // Create bid record
                 const bid = await tx.bids.create({
@@ -108,13 +130,12 @@ class BidRepository {
                     },
                 });
 
-                // Decrement subscription uses; expire if reaches 0
-                const newUses = subscription.sub_remaining_uses - 1;
+                // Decrement subscription daily uses (no expiration on daily reset system)
+                const newUses = remainingUses - 1;
                 await tx.subscriptions.update({
                     where: { sub_id: subscription.sub_id },
                     data: {
                         sub_remaining_uses: newUses,
-                        ...(newUses === 0 && { sub_status: "EXPIRED" }),
                     },
                 });
 

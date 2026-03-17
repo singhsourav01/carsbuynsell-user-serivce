@@ -2,6 +2,7 @@ import { SubscriptionStatus } from "@prisma/client";
 import prisma from "../configs/prisma.config";
 import { subscriptionSelect, SUBSCRIPTION_LIMIT } from "../constants/subscription.constant";
 import { queryHandler } from "../utils/helper";
+import { startOfDay } from "date-fns";
 
 class SubscriptionRepository {
     findPlans = async () => {
@@ -19,18 +20,84 @@ class SubscriptionRepository {
         );
     };
 
+    /**
+     * Finds an active subscription for a user and resets daily uses if needed.
+     * Returns null if no valid subscription exists or daily limit is exhausted.
+     */
     findActiveByUserId = async (user_id: string) => {
-        return queryHandler(() =>
-            prisma.subscriptions.findFirst({
+        return queryHandler(async () => {
+            const subscription = await prisma.subscriptions.findFirst({
                 where: {
                     sub_user_id: user_id,
                     sub_status: SubscriptionStatus.ACTIVE,
                     sub_expires_at: { gt: new Date() },
-                    sub_remaining_uses: { gt: 0 },
                 },
-                select: subscriptionSelect,
-            })
-        );
+                select: {
+                    ...subscriptionSelect,
+                    sub_daily_uses_reset_date: true,
+                },
+            });
+
+            if (!subscription) return null;
+
+            const today = startOfDay(new Date());
+            const resetDate = startOfDay(new Date(subscription.sub_daily_uses_reset_date));
+
+            // If the reset date is before today, reset daily uses
+            if (resetDate < today) {
+                const updated = await prisma.subscriptions.update({
+                    where: { sub_id: subscription.sub_id },
+                    data: {
+                        sub_remaining_uses: SUBSCRIPTION_LIMIT,
+                        sub_daily_uses_reset_date: new Date(),
+                    },
+                    select: subscriptionSelect,
+                });
+                return updated;
+            }
+
+            // If daily uses are exhausted for today
+            if (subscription.sub_remaining_uses <= 0) {
+                return null;
+            }
+
+            return subscription;
+        });
+    };
+
+    /**
+     * Checks if a user can purchase a new subscription.
+     * Returns true if user has no active subscription OR if daily limit is exhausted.
+     */
+    canPurchaseSubscription = async (user_id: string) => {
+        return queryHandler(async () => {
+            const subscription = await prisma.subscriptions.findFirst({
+                where: {
+                    sub_user_id: user_id,
+                    sub_status: SubscriptionStatus.ACTIVE,
+                    sub_expires_at: { gt: new Date() },
+                },
+                select: {
+                    sub_id: true,
+                    sub_remaining_uses: true,
+                    sub_daily_uses_reset_date: true,
+                },
+            });
+
+            // No active subscription - can purchase
+            if (!subscription) return true;
+
+            const today = startOfDay(new Date());
+            const resetDate = startOfDay(new Date(subscription.sub_daily_uses_reset_date));
+
+            // If reset date is today and uses are exhausted - can purchase new subscription
+            if (resetDate >= today && subscription.sub_remaining_uses <= 0) {
+                return true;
+            }
+
+            // User has active subscription with uses remaining - cannot purchase
+            return false;
+        });
     };
 
     findByRazorpayOrderId = async (razorpay_order_id: string) => {
