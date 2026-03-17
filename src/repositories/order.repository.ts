@@ -107,7 +107,7 @@ class OrderRepository {
 
                 // Check if daily uses are exhausted
                 if (remainingUses <= 0) {
-                    throw new ApiError("DAILY_USES_EXHAUSTED");
+                    throw new ApiError(StatusCodes.BAD_REQUEST, "DAILY_USES_EXHAUSTED");
                 }
 
                 // Create order
