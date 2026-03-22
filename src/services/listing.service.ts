@@ -108,7 +108,7 @@ class ListingService {
                 }
             })
         );
-
+        console.log(result, enrichedListings, "just testing")
         return {
             ...result,
             listings: enrichedListings
