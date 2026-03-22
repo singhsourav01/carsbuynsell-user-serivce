@@ -17,6 +17,7 @@ class ListingController {
     }
 
     getAll = asyncHandler(async (req: Request, res: Response) => {
+        console.log('inside getAll listings controller')
         const query = req.query as ListingQueryDTO;
         const result = await this.listingService.getAll(query);
         return res
