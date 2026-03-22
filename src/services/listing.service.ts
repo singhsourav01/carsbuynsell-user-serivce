@@ -6,6 +6,7 @@ import { CreateListingDTO, ListingQueryDTO, UpdateListingDTO } from "../types/li
 import { INTEGERS } from "../constants/app.constant";
 import userPortfolioService from "../repositories/userPortfolio.repository";
 import UserPortfolioService from "./userPortfolio.service";
+import { getFilesByIds } from "../api/user.api";
 
 class ListingService {
     private listingRepository: ListingRepository;
@@ -16,14 +17,71 @@ class ListingService {
         this.userPortfolioService = new UserPortfolioService();
     }
 
+    /**
+     * Helper to fetch signed URLs and replace file IDs in listings
+     */
+    private populateSignedUrls = async (listings: any[]) => {
+        const fileIds: string[] = [];
+
+        // Collect all file IDs
+        for (const listing of listings) {
+            if (listing.images) {
+                for (const img of listing.images) {
+                    if (img.limg_url) {
+                        fileIds.push(img.limg_url);
+                    }
+                }
+            }
+            if (listing.seller?.user_profile_image_file_id) {
+                fileIds.push(listing.seller.user_profile_image_file_id);
+            }
+        }
+
+        if (fileIds.length === 0) return;
+
+        try {
+            const files = await getFilesByIds(fileIds);
+            const fileMap = new Map<string, string>();
+
+            if (files && Array.isArray(files)) {
+                for (const file of files) {
+                    if (file.file_id && file.file_signed_url) {
+                        fileMap.set(file.file_id, file.file_signed_url);
+                    }
+                }
+            }
+
+            // Replace file IDs with signed URLs
+            for (const listing of listings) {
+                if (listing.images) {
+                    for (const img of listing.images) {
+                        if (img.limg_url && fileMap.has(img.limg_url)) {
+                            img.limg_url = fileMap.get(img.limg_url);
+                        }
+                    }
+                }
+                if (listing.seller?.user_profile_image_file_id) {
+                    const signedUrl = fileMap.get(listing.seller.user_profile_image_file_id);
+                    listing.seller.user_profile_image_file_id = signedUrl ?? null;
+                }
+            }
+        } catch (error) {
+            console.error("Failed to fetch signed URLs:", error);
+        }
+    };
+
     getAll = async (query: ListingQueryDTO) => {
-        return this.listingRepository.findAll(query);
+        const result = await this.listingRepository.findAll(query);
+        await this.populateSignedUrls(result.listings as any[]);
+        return result;
     };
 
     getById = async (lst_id: string) => {
         const listing = await this.listingRepository.findById(lst_id);
         if (!listing)
             throw new ApiError(StatusCodes.NOT_FOUND, LISTING_ERRORS.LISTING_NOT_FOUND);
+
+        await this.populateSignedUrls([listing]);
 
         // Increment view count (fire-and-forget)
         this.listingRepository.incrementViewCount(lst_id).catch(() => { });
@@ -85,7 +143,9 @@ class ListingService {
     };
 
     getMyListings = async (seller_id: string, page: number, take: number) => {
-        return this.listingRepository.findBySellerId(seller_id, page, take);
+        const result = await this.listingRepository.findBySellerId(seller_id, page, take);
+        await this.populateSignedUrls(result.listings as any[]);
+        return result;
     };
 
     adminUpdateListing = async (lst_id: string, data: any) => {
@@ -95,7 +155,9 @@ class ListingService {
         return this.listingRepository.update(lst_id, data);
     };
     getListingByCategoryId = async (cat_id: string, page: number, take: number) => {
-        return this.listingRepository.getListingByCategoryId(cat_id, page, take);
+        const result = await this.listingRepository.getListingByCategoryId(cat_id, page, take);
+        await this.populateSignedUrls(result.listings as any[]);
+        return result;
     };
 }
 

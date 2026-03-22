@@ -16,7 +16,7 @@ import OtpService from "../services/otp.service";
 import UserService from "../services/user.service";
 import { API_RESPONSES } from "./../constants/app.constant";
 import UserPortfolioService from "../services/userPortfolio.service";
-import { getFileById } from "../api/user.api";
+import { getFileById, getFilesByIds } from "../api/user.api";
 
 interface AuthenticatedRequest extends Request {
   user?: any;
@@ -164,12 +164,56 @@ class UserController {
 
     const user = await this.userService.getUserById(user_id);
 
-    const { user_profile_image_file_id } = user;
+    // Collect all file IDs (profile image + selfie + portfolio images)
+    const fileIds: string[] = [];
 
-    if(user_profile_image_file_id){
-      const profile_image = await getFileById(user_profile_image_file_id);
-      user.user_profile_image_file_id = profile_image?.file_signed_url ?? null;
+    if (user.user_profile_image_file_id) {
+      fileIds.push(user.user_profile_image_file_id);
     }
+    if (user.user_selfie_file_id) {
+      fileIds.push(user.user_selfie_file_id);
+    }
+    if (user.user_portfolio && Array.isArray(user.user_portfolio)) {
+      for (const portfolio of user.user_portfolio) {
+        if (portfolio.up_file_id) {
+          fileIds.push(portfolio.up_file_id);
+        }
+      }
+    }
+
+    // Fetch all signed URLs in one batch call
+    if (fileIds.length > 0) {
+      try {
+        const files = await getFilesByIds(fileIds);
+        const fileMap = new Map<string, string>();
+
+        if (files && Array.isArray(files)) {
+          for (const file of files) {
+            if (file.file_id && file.file_signed_url) {
+              fileMap.set(file.file_id, file.file_signed_url);
+            }
+          }
+        }
+
+        // Replace file IDs with signed URLs
+        if (user.user_profile_image_file_id && fileMap.has(user.user_profile_image_file_id)) {
+          user.user_profile_image_file_id = fileMap.get(user.user_profile_image_file_id) ?? null;
+        }
+        if (user.user_selfie_file_id && fileMap.has(user.user_selfie_file_id)) {
+          user.user_selfie_file_id = fileMap.get(user.user_selfie_file_id) ?? null;
+        }
+        if (user.user_portfolio && Array.isArray(user.user_portfolio)) {
+          for (const portfolio of user.user_portfolio) {
+            if (portfolio.up_file_id && fileMap.has(portfolio.up_file_id)) {
+              portfolio.up_file_id = fileMap.get(portfolio.up_file_id);
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch signed URLs:", error);
+      }
+    }
+
     return res
       .status(StatusCodes.OK)
       .json(
