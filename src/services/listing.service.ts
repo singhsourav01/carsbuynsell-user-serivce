@@ -6,7 +6,7 @@ import { CreateListingDTO, ListingQueryDTO, UpdateListingDTO } from "../types/li
 import { INTEGERS } from "../constants/app.constant";
 import userPortfolioService from "../repositories/userPortfolio.repository";
 import UserPortfolioService from "./userPortfolio.service";
-import { getFilesByIds } from "../api/user.api";
+import { getFilesByIds, getUserById } from "../api/user.api";
 
 class ListingService {
     private listingRepository: ListingRepository;
@@ -70,9 +70,52 @@ class ListingService {
         }
     };
 
+    /**
+     * Helper to fetch user portfolio images for each listing's seller
+     */
+    private populateUserPortfolioImages = async (listings: any[]) => {
+        // Get unique seller IDs
+        const sellerIds = [...new Set(listings.map(l => l.seller?.user_id).filter(Boolean))];
+
+        if (sellerIds.length === 0) return;
+
+        try {
+            // Fetch portfolio images for all sellers in parallel
+            const portfolioPromises = sellerIds.map(sellerId =>
+                getUserById(sellerId).catch(() => null)
+            );
+            const portfolioResults = await Promise.all(portfolioPromises);
+
+            // Create a map of seller_id -> portfolio images
+            const portfolioMap = new Map<string, any[]>();
+            sellerIds.forEach((sellerId, index) => {
+                const files = portfolioResults[index];
+                if (files && Array.isArray(files)) {
+                    portfolioMap.set(sellerId, files);
+                }
+            });
+
+            // Add portfolio images to each listing's seller
+            for (const listing of listings) {
+                if (listing.seller?.user_id) {
+                    const portfolioImages = portfolioMap.get(listing.seller.user_id);
+                    listing.seller.user_portfolio_images = portfolioImages || [];
+                }
+            }
+        } catch (error) {
+            console.error("Failed to fetch user portfolio images:", error);
+        }
+    };
+
     getAll = async (query: ListingQueryDTO) => {
         const result = await this.listingRepository.findAll(query);
+
+        // Populate signed URLs for listing images and seller profile
         await this.populateSignedUrls(result.listings as any[]);
+
+        // Populate user portfolio images for each seller
+        await this.populateUserPortfolioImages(result.listings as any[]);
+
         return result;
     };
 
@@ -82,6 +125,7 @@ class ListingService {
             throw new ApiError(StatusCodes.NOT_FOUND, LISTING_ERRORS.LISTING_NOT_FOUND);
 
         await this.populateSignedUrls([listing]);
+        await this.populateUserPortfolioImages([listing]);
 
         // Increment view count (fire-and-forget)
         this.listingRepository.incrementViewCount(lst_id).catch(() => { });
@@ -145,6 +189,7 @@ class ListingService {
     getMyListings = async (seller_id: string, page: number, take: number) => {
         const result = await this.listingRepository.findBySellerId(seller_id, page, take);
         await this.populateSignedUrls(result.listings as any[]);
+        await this.populateUserPortfolioImages(result.listings as any[]);
         return result;
     };
 
@@ -157,6 +202,7 @@ class ListingService {
     getListingByCategoryId = async (cat_id: string, page: number, take: number) => {
         const result = await this.listingRepository.getListingByCategoryId(cat_id, page, take);
         await this.populateSignedUrls(result.listings as any[]);
+        await this.populateUserPortfolioImages(result.listings as any[]);
         return result;
     };
 }

@@ -74,6 +74,23 @@ export const getFileById = async (fileId: string, token?: string) => {
   }
 };
 
+export const getUserById = async (userId: string, token?: string) => {
+  try {
+    const { data } = await axios.get(
+      `${FILE_SERVICE_URL}/get-by-user-id?id=${userId}`,
+      {
+        headers: {
+          "Content-Type": "application/json",
+          ...(token && { Authorization: token }),
+        },
+      }
+    );
+    return data?.data;
+  } catch (error) {
+    handleAxiosError(error);
+  }
+};
+
 // Delete multiple files by IDs
 export const deleteFilesByIds = async (fileIds: string[], token?: string) => {
   try {
