@@ -162,7 +162,7 @@ class UserController {
   getUserById = asyncHandler(async (req: Request, res: Response) => {
     const { user_id } = req.params;
 
-    const user = await this.userService.getUserById(user_id);
+    const user: any = await this.userService.getUserById(user_id);
 
     // Collect all file IDs (profile image + selfie + portfolio images)
     const fileIds: string[] = [];
@@ -197,10 +197,10 @@ class UserController {
 
         // Replace file IDs with signed URLs
         if (user.user_profile_image_file_id && fileMap.has(user.user_profile_image_file_id)) {
-          user.user_profile_image_file_id = fileMap.get(user.user_profile_image_file_id) ?? null;
+          user.user_profile_image_file_id = fileMap.get(user.user_profile_image_file_id);
         }
         if (user.user_selfie_file_id && fileMap.has(user.user_selfie_file_id)) {
-          user.user_selfie_file_id = fileMap.get(user.user_selfie_file_id) ?? null;
+          user.user_selfie_file_id = fileMap.get(user.user_selfie_file_id);
         }
         if (user.user_portfolio && Array.isArray(user.user_portfolio)) {
           for (const portfolio of user.user_portfolio) {
