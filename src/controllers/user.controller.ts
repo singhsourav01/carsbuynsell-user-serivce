@@ -16,6 +16,7 @@ import OtpService from "../services/otp.service";
 import UserService from "../services/user.service";
 import { API_RESPONSES } from "./../constants/app.constant";
 import UserPortfolioService from "../services/userPortfolio.service";
+import { getFileById } from "../api/user.api";
 
 interface AuthenticatedRequest extends Request {
   user?: any;
@@ -162,6 +163,13 @@ class UserController {
     const { user_id } = req.params;
 
     const user = await this.userService.getUserById(user_id);
+
+    const { user_profile_image_file_id } = user;
+
+    if(user_profile_image_file_id){
+      const profile_image = await getFileById(user_profile_image_file_id);
+      user.user_profile_image_file_id = profile_image?.file_signed_url ?? null;
+    }
     return res
       .status(StatusCodes.OK)
       .json(
@@ -179,6 +187,7 @@ class UserController {
         );
     }
   );
+  
 
   updateUser = asyncHandler(
     async (req: AuthenticatedRequest, res: Response) => {
@@ -602,7 +611,6 @@ class UserController {
       )
     );
   });
-
 
 }
 

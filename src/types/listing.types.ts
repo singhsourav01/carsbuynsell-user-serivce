@@ -9,6 +9,7 @@ export type CreateListingDTO = {
   lst_price: number;
   lst_min_increment?: number;
   lst_auction_end?: string; // ISO date string
+  user_portfolio?: any[];
 };
 
 export type UpdateListingDTO = Partial<CreateListingDTO> & {

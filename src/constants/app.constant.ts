@@ -138,6 +138,8 @@ export const API_RESPONSES = {
 
   // Dashboard
   DASHBOARD_FETCHED: "Dashboard data fetched successfully",
+  USER_IMAGES_CREATED: "User images created successfully",
+  USER_IMAGES_DELETED: "User images deleted successfully",
 };
 
 export const API_ERRORS = {

@@ -8,14 +8,14 @@ class UserPortfolioService {
     this.userPortfolioRepository = new UserPortfolioRepository();
   }
 
-  createPortfolio = async (user_id: any, portfolio_ids: any) => {
+  createPortfolio = async (user_id: string, portfolio_ids: string[]) => {
     if (!portfolio_ids) return [];
 
     await this.userPortfolioRepository.deleteMany(user_id);
 
     if (portfolio_ids.length === INTEGERS.ZERO) return [];
 
-    const portfolios = portfolio_ids.map((item: any) => {
+    const portfolios = portfolio_ids.map((item) => {
       return {
         up_user_id: user_id,
         up_file_id: item,

@@ -16,6 +16,7 @@ import {
   other_requirement,
 } from "../types/common.types";
 import { location_requirement } from "./../types/common.types";
+import axios from "axios";
 
 export const queryHandler = async <T>(
   queryPromise: () => Promise<T>
@@ -238,4 +239,18 @@ export const getFilterUserQuery = (
 
   if (where.AND.length > INTEGERS.ZERO) return where;
   return { NOT: { user_id: user_id } };
+};
+
+
+export const handleAxiosError = (error: any) => {
+  if (axios.isAxiosError(error)) {
+    console.log(error)
+    const statusCode = error.response?.status || 500;
+    const message =
+      error.response?.data?.message || "User service error";
+
+    throw new ApiError(statusCode, message);
+  }
+
+  throw new ApiError(500, "Unexpected error while calling user service");
 };

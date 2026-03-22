@@ -3,12 +3,17 @@ import { StatusCodes } from "http-status-codes";
 import { LISTING_ERRORS } from "../constants/listing.constant";
 import ListingRepository from "../repositories/listing.repository";
 import { CreateListingDTO, ListingQueryDTO, UpdateListingDTO } from "../types/listing.types";
+import { INTEGERS } from "../constants/app.constant";
+import userPortfolioService from "../repositories/userPortfolio.repository";
+import UserPortfolioService from "./userPortfolio.service";
 
 class ListingService {
     private listingRepository: ListingRepository;
+    private userPortfolioService: UserPortfolioService;
 
     constructor() {
         this.listingRepository = new ListingRepository();
+        this.userPortfolioService = new UserPortfolioService();
     }
 
     getAll = async (query: ListingQueryDTO) => {
@@ -36,7 +41,9 @@ class ListingService {
             lst_price: dto.lst_price,
             lst_status: "ACTIVE",
         };
-
+        
+        await this.userPortfolioService.createPortfolio(seller_id, dto.user_portfolio);
+  
         if (dto.lst_type === "AUCTION") {
             if (!dto.lst_auction_end)
                 throw new ApiError(StatusCodes.BAD_REQUEST, "Auction end date is required for auction listings");
