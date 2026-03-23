@@ -75,22 +75,29 @@ class HomeService {
             this.homeRepository.getCategories(),
         ]);
 
-        return { featured, recent, categories };
+        // Enrich featured listings
+        const enrichedFeatured = await this.enrichListings(featured || []);
+
+        // Enrich recent listings
+        const recentListings = recent?.data || [];
+        const enrichedRecent = await this.enrichListings(recentListings);
+
+        return {
+            featured: enrichedFeatured,
+            recent: {
+                ...recent,
+                data: enrichedRecent
+            },
+            categories
+        };
     };
 
-    // ─── Listings (paginated) ─────────────────────────────────────────────────────
-
     /**
-     * Paginated listing feed.
-     * • category is OPTIONAL — omit to get all listings ("All" tab).
-     * • category can be a slug (e.g. "used-cars") or a UUID.
+     * Helper to enrich listings with signed URLs and user portfolio
      */
-    getListings = async (query: ListingsQueryDTO) => {
-        const result = await this.homeRepository.getActiveListings(query);
-        const listings = result.data || [];
-
+    private enrichListings = async (listings: any[]) => {
         if (!Array.isArray(listings) || listings.length === 0) {
-            return result;
+            return listings;
         }
 
         // Populate signed URLs for listing images and seller profile
@@ -122,6 +129,22 @@ class HomeService {
                 }
             })
         );
+
+        return enrichedListings;
+    };
+
+    // ─── Listings (paginated) ─────────────────────────────────────────────────────
+
+    /**
+     * Paginated listing feed.
+     * • category is OPTIONAL — omit to get all listings ("All" tab).
+     * • category can be a slug (e.g. "used-cars") or a UUID.
+     */
+    getListings = async (query: ListingsQueryDTO) => {
+        const result = await this.homeRepository.getActiveListings(query);
+        const listings = result.data || [];
+
+        const enrichedListings = await this.enrichListings(listings);
 
         return {
             ...result,
