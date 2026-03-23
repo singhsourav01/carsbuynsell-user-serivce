@@ -130,10 +130,27 @@ class ListingService {
 
         await this.populateSignedUrls([listing]);
 
+        // Fetch user portfolio images
+        let userPortfolio: any[] = [];
+        try {
+            const portfolioFiles = await getUserById((listing as any).lst_seller_id);
+            if (Array.isArray(portfolioFiles)) {
+                userPortfolio = portfolioFiles.map((file: any) => ({
+                    file_id: file.file_id,
+                    file_signed_url: file.file_signed_url
+                }));
+            }
+        } catch (error) {
+            console.error("Portfolio fetch failed for seller:", (listing as any).lst_seller_id);
+        }
+
         // Increment view count (fire-and-forget)
         this.listingRepository.incrementViewCount(lst_id).catch(() => { });
 
-        return listing;
+        return {
+            ...listing,
+            user_portfolio: userPortfolio
+        };
     };
 
     create = async (seller_id: string, dto: CreateListingDTO) => {
