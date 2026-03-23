@@ -71,16 +71,17 @@ class ListingService {
     };
 
     getAll = async (query: ListingQueryDTO) => {
-        const result = await this.listingRepository.findAll(query);
+        const result: any = await this.listingRepository.findAll(query);
 
-        const listings = result.listings || [];
+        // Handle both response structures: { data: [...] } or { listings: [...] }
+        const listings = result.data || result.listings || [];
 
         if (!Array.isArray(listings) || listings.length === 0) {
             return result;
         }
 
         // Populate signed URLs for listing images and seller profile
-        await this.populateSignedUrls(listings as any[]);
+        await this.populateSignedUrls(listings);
 
         // Enrich listings with user portfolio images
         const enrichedListings = await Promise.all(
@@ -108,7 +109,14 @@ class ListingService {
                 }
             })
         );
-        console.log(result, enrichedListings, "just testing")
+
+        // Return with the correct property name
+        if (result.data) {
+            return {
+                ...result,
+                data: enrichedListings
+            };
+        }
         return {
             ...result,
             listings: enrichedListings
