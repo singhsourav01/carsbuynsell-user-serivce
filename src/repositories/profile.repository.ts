@@ -20,6 +20,14 @@ class ProfileRepository {
                             lst_price: true,
                             lst_type: true,
                             lst_status: true,
+                            images: {
+                                select: {
+                                    limg_id: true,
+                                    limg_url: true,
+                                    limg_order: true,
+                                },
+                                orderBy: { limg_order: "asc" },
+                            },
                         },
                     },
                 },
@@ -47,6 +55,14 @@ class ProfileRepository {
                             lst_price: true,
                             lst_type: true,
                             lst_status: true,
+                            images: {
+                                select: {
+                                    limg_id: true,
+                                    limg_url: true,
+                                    limg_order: true,
+                                },
+                                orderBy: { limg_order: "asc" },
+                            },
                         },
                     },
                 },

@@ -1,4 +1,11 @@
 import ProfileRepository from "../repositories/profile.repository";
+import { getFilesByIds } from "../api/user.api";
+
+export interface ListingImage {
+    limg_id: string;
+    limg_url: string;
+    limg_order: number;
+}
 
 export interface OrderHistoryItem {
     id: string;
@@ -12,6 +19,7 @@ export interface OrderHistoryItem {
         lst_price: number;
         lst_type: string;
         lst_status: string;
+        images: ListingImage[];
     };
 }
 
@@ -57,6 +65,7 @@ class ProfileService {
                 lst_price: Number(bid.listing.lst_price),
                 lst_type: bid.listing.lst_type,
                 lst_status: bid.listing.lst_status,
+                images: bid.listing.images || [],
             },
         }));
 
@@ -73,6 +82,7 @@ class ProfileService {
                 lst_price: Number(order.listing.lst_price),
                 lst_type: order.listing.lst_type,
                 lst_status: order.listing.lst_status,
+                images: order.listing.images || [],
             },
         }));
 
@@ -83,6 +93,10 @@ class ProfileService {
 
         // Apply pagination
         const paginated = combined.slice(skip, skip + take);
+
+        // Populate signed URLs for images
+        await this.populateSignedUrls(paginated);
+
         const totalCount = bidCount + orderCount;
 
         return {
@@ -91,6 +105,52 @@ class ProfileService {
             page,
             take,
         };
+    };
+
+    /**
+     * Helper to fetch signed URLs for listing images
+     */
+    private populateSignedUrls = async (historyItems: OrderHistoryItem[]) => {
+        const fileIds: string[] = [];
+
+        // Collect all file IDs from images
+        for (const item of historyItems) {
+            if (item.listing.images) {
+                for (const img of item.listing.images) {
+                    if (img.limg_url) {
+                        fileIds.push(img.limg_url);
+                    }
+                }
+            }
+        }
+
+        if (fileIds.length === 0) return;
+
+        try {
+            const files = await getFilesByIds(fileIds);
+            const fileMap = new Map<string, string>();
+
+            if (files && Array.isArray(files)) {
+                for (const file of files) {
+                    if (file.file_id && file.file_signed_url) {
+                        fileMap.set(file.file_id, file.file_signed_url);
+                    }
+                }
+            }
+
+            // Replace file IDs with signed URLs
+            for (const item of historyItems) {
+                if (item.listing.images) {
+                    for (const img of item.listing.images as any[]) {
+                        if (img.limg_url && fileMap.has(img.limg_url)) {
+                            img.limg_url = fileMap.get(img.limg_url);
+                        }
+                    }
+                }
+            }
+        } catch (error) {
+            console.error("Failed to fetch signed URLs:", error);
+        }
     };
 }
 
