@@ -24,6 +24,7 @@ import OrderRoutes from "./routes/order.routes";
 import SubscriptionRoutes from "./routes/subscription.routes";
 import ProfileRoutes from "./routes/profile.routes";
 import MarketplaceAdminRoutes from "./routes/marketplaceAdmin.routes";
+import UserVehicleRecordRoutes from "./routes/userVehicleRecord.routes";
 
 import { registerWithEureka } from "./utils/eureka.helper";
 
@@ -66,6 +67,7 @@ app.use(API_ENDPOINTS.BASE, OrderRoutes);
 app.use(API_ENDPOINTS.BASE, SubscriptionRoutes);
 app.use(API_ENDPOINTS.BASE, ProfileRoutes);
 app.use(API_ENDPOINTS.BASE, MarketplaceAdminRoutes);
+app.use(API_ENDPOINTS.BASE, UserVehicleRecordRoutes);
 
 // ─── Global Error Handler ─────────────────────────────────────────────────────
 app.use((err: ApiError, req: Request, res: Response, next: NextFunction) => {

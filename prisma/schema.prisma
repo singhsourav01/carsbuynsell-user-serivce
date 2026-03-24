@@ -117,6 +117,7 @@ model users {
   bids                       bids[]
   orders                     orders[]
   subscriptions              subscriptions[]
+  vehicle_records            user_vehicle_record[]
   @@fulltext([user_full_name, user_email])
 }
 
@@ -283,4 +284,22 @@ model subscriptions {
   sub_updated_at            DateTime           @updatedAt
   user                      users              @relation(fields: [sub_user_id], references: [user_id], onDelete: Cascade)
   plan                      subscription_plans @relation(fields: [sub_plan_id], references: [sp_id])
+}
+
+// ─── Vehicle Category Enum ────────────────────────────────────────────────────
+
+
+
+// ─── User Vehicle Record ──────────────────────────────────────────────────────
+
+model user_vehicle_record {
+  uvr_id          String          @id @default(uuid()) @map("_id")
+  uvr_user_id     String
+  uvr_title       String
+  uvr_description String?         @db.Text
+  uvr_category    String?
+  uvr_base_price  Decimal         @db.Decimal(12, 2)
+  uvr_created_at  DateTime        @default(now())
+  uvr_updated_at  DateTime        @updatedAt
+  user            users           @relation(fields: [uvr_user_id], references: [user_id], onDelete: Cascade)
 }
