@@ -1,4 +1,3 @@
-import { VehicleCategory } from "@prisma/client";
 import prisma from "../configs/prisma.config";
 import { userVehicleRecordSelect } from "../constants/userVehicleRecord.constant";
 import { queryHandler } from "../utils/helper";
@@ -22,7 +21,7 @@ class UserVehicleRecordRepository {
                 { uvr_description: { contains: query.search } },
             ];
         }
-        if (query.category) where.uvr_category = query.category as VehicleCategory;
+        if (query.category) where.uvr_category = query.category as string;
 
         const [records, count] = await queryHandler(() =>
             prisma.$transaction([

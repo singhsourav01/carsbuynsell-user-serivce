@@ -1,10 +1,10 @@
-import { VehicleCategory, Prisma } from "@prisma/client";
+import {  Prisma } from "@prisma/client";
 import prisma from "../configs/prisma.config";
 
 export type CreateUserVehicleRecordDTO = {
   uvr_title: string;
   uvr_description?: string;
-  uvr_category: VehicleCategory;
+  uvr_category: string;
   uvr_base_price: number;
 };
 
@@ -14,7 +14,7 @@ export type UserVehicleRecordQueryDTO = {
   page?: string;
   page_size?: string;
   search?: string;
-  category?: VehicleCategory;
+  category?: string;
 };
 
 export type createUserVehicleRecordType = Prisma.Args<
