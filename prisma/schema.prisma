@@ -296,7 +296,7 @@ model user_vehicle_record {
   uvr_id          String          @id @default(uuid()) @map("_id")
   uvr_user_id     String
   uvr_title       String
-  uvr_description String?         @db.Text
+  uvr_description String?         @db.Text  
   uvr_category    String?
   uvr_base_price  Decimal         @db.Decimal(12, 2)
   uvr_created_at  DateTime        @default(now())

@@ -27,40 +27,45 @@ class SubscriptionService {
         return this.subscriptionRepository.findPlans();
     };
 
-    createPaymentOrder = async (user_id: string, plan_id: string) => {
+ createPaymentOrder = async (user_id: string, plan_id: string) => {
+    // Only check canPurchase for the main subscription (not for sell subscription sub_002)
+    // Users can pay 800rs anytime to list a vehicle
+    if (plan_id !== "sub_002") {
         const canPurchase = await this.subscriptionRepository.canPurchaseSubscription(user_id);
         if (!canPurchase)
             throw new ApiError(StatusCodes.CONFLICT, SUBSCRIPTION_ERRORS.ALREADY_SUBSCRIBED);
+    }
 
-        // Validate plan
-        const plan = await this.subscriptionRepository.findPlanById(plan_id);
-        if (!plan)
-            throw new ApiError(StatusCodes.NOT_FOUND, SUBSCRIPTION_ERRORS.PLAN_NOT_FOUND);
+    // Validate plan
+    const plan = await this.subscriptionRepository.findPlanById(plan_id);
+    if (!plan)
+        throw new ApiError(StatusCodes.NOT_FOUND, SUBSCRIPTION_ERRORS.PLAN_NOT_FOUND);
 
-        const amountInPaise = Number(plan.sp_price) * 100; // Razorpay uses paise
+    const amountInPaise = Number(plan.sp_price) * 100; // Razorpay uses paise
 
-        const razorpayOrder = await razorpay.orders.create({
-            amount: amountInPaise,
-            currency: "INR",
-            notes: { user_id, plan_id },
-        });
-        console.log(razorpayOrder, " here is entire details of razorpayOrder");
-        // Store pending subscription in DB
-        const expires_at = addDays(new Date(), plan.sp_duration);
-        await this.subscriptionRepository.createPendingSubscription(
-            user_id,
-            plan_id,
-            razorpayOrder.id,
-            expires_at
-        );
+    const razorpayOrder = await razorpay.orders.create({
+        amount: amountInPaise,
+        currency: "INR",
+        notes: { user_id, plan_id },
+    });
+    console.log(razorpayOrder, " here is entire details of razorpayOrder");
+    
+    // Store pending subscription in DB
+    const expires_at = addDays(new Date(), plan.sp_duration);
+    await this.subscriptionRepository.createPendingSubscription(
+        user_id,
+        plan_id,
+        razorpayOrder.id,
+        expires_at
+    );
 
-        return {
-            razorpay_order_id: razorpayOrder.id,
-            amount: amountInPaise,
-            currency: "INR",
-            key_id: process.env.RAZORPAY_KEY_ID,
-        };
+    return {
+        razorpay_order_id: razorpayOrder.id,
+        amount: amountInPaise,
+        currency: "INR",
+        key_id: process.env.RAZORPAY_KEY_ID,
     };
+};
 
     /**
      * Step 2: Verify Razorpay signature and activate the subscription.
