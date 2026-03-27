@@ -345,3 +345,5 @@ model user_vehicle_record {
   uvr_updated_at  DateTime        @updatedAt
   user            users           @relation(fields: [uvr_user_id], references: [user_id], onDelete: Cascade)
 }
+
+
