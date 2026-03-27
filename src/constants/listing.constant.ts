@@ -62,4 +62,15 @@ export const listingSelect = {
         },
         orderBy: { limg_order: "asc" as const },
     },
+    vehicle_details: {
+        select: {
+            lvd_id: true,
+            lvd_fuel_type: true,
+            lvd_transmission: true,
+            lvd_body_type: true,
+            lvd_ownership: true,
+            lvd_year: true,
+            lvd_kilometers: true,
+        },
+    },
 };

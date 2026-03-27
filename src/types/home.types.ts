@@ -1,3 +1,5 @@
+import { FuelType, TransmissionType, BodyType, OwnershipType } from "@prisma/client";
+
 // ─── Home / Listings Query ────────────────────────────────────────────────────
 
 export type HomeQueryDTO = {
@@ -12,6 +14,18 @@ export type ListingsQueryDTO = {
     type?: string;     // filter by ListingType (optional)
     page?: string;     // page number (default: 1)
     limit?: string;    // items per page (default: 12)
+    search?: string;   // search by title/description
+    min_price?: string;
+    max_price?: string;
+    // Vehicle filter parameters
+    fuel_type?: string;      // Comma-separated: "PETROL,DIESEL"
+    transmission?: string;   // Comma-separated: "MANUAL,AUTOMATIC"
+    body_type?: string;      // Comma-separated: "SEDAN,SUV,HATCHBACK"
+    ownership?: string;      // Comma-separated: "FIRST_OWNER,SECOND_OWNER"
+    min_year?: string;
+    max_year?: string;
+    min_km?: string;
+    max_km?: string;
 };
 
 // ─── Category ─────────────────────────────────────────────────────────────────

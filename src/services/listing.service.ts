@@ -2,7 +2,7 @@ import { ApiError } from "common-microservices-utils";
 import { StatusCodes } from "http-status-codes";
 import { LISTING_ERRORS } from "../constants/listing.constant";
 import ListingRepository from "../repositories/listing.repository";
-import { CreateListingDTO, ListingQueryDTO, UpdateListingDTO } from "../types/listing.types";
+import { CreateListingDTO, ListingQueryDTO, UpdateListingDTO, VehicleDetailsDTO } from "../types/listing.types";
 import { INTEGERS } from "../constants/app.constant";
 import userPortfolioService from "../repositories/userPortfolio.repository";
 import UserPortfolioService from "./userPortfolio.service";
@@ -174,7 +174,21 @@ class ListingService {
             data.lst_current_bid = dto.lst_price;
         }
 
-        return this.listingRepository.create(data);
+        const listing = await this.listingRepository.create(data);
+
+        // Create vehicle details if provided
+        if (dto.vehicle_details) {
+            await this.listingRepository.createVehicleDetails(listing.lst_id, {
+                fuel_type: dto.vehicle_details.fuel_type,
+                transmission: dto.vehicle_details.transmission,
+                body_type: dto.vehicle_details.body_type,
+                ownership: dto.vehicle_details.ownership,
+                year: dto.vehicle_details.year,
+                kilometers: dto.vehicle_details.kilometers,
+            });
+        }
+
+        return listing;
     };
 
     update = async (lst_id: string, seller_id: string, dto: UpdateListingDTO) => {
@@ -193,7 +207,21 @@ class ListingService {
         if (dto.lst_auction_end !== undefined) data.lst_auction_end = new Date(dto.lst_auction_end);
         if (dto.lst_min_increment !== undefined) data.lst_min_increment = dto.lst_min_increment;
 
-        return this.listingRepository.update(lst_id, data);
+        const updatedListing = await this.listingRepository.update(lst_id, data);
+
+        // Update vehicle details if provided
+        if (dto.vehicle_details) {
+            await this.listingRepository.updateVehicleDetails(lst_id, {
+                fuel_type: dto.vehicle_details.fuel_type,
+                transmission: dto.vehicle_details.transmission,
+                body_type: dto.vehicle_details.body_type,
+                ownership: dto.vehicle_details.ownership,
+                year: dto.vehicle_details.year,
+                kilometers: dto.vehicle_details.kilometers,
+            });
+        }
+
+        return updatedListing;
     };
 
     delete = async (lst_id: string, seller_id: string) => {

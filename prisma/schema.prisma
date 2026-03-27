@@ -82,6 +82,33 @@ enum SubscriptionStatus {
   CANCELLED
 }
 
+enum FuelType {
+  PETROL
+  DIESEL
+  CNG
+  ELECTRIC
+}
+
+enum TransmissionType {
+  MANUAL
+  AUTOMATIC
+}
+
+enum BodyType {
+  SEDAN
+  MUV
+  SUV
+  LUXURY
+  HATCHBACK
+}
+
+enum OwnershipType {
+  FIRST_OWNER
+  SECOND_OWNER
+  THIRD_OWNER
+  FOURTH_OWNER_PLUS
+}
+
 // ─── Existing Models ──────────────────────────────────────────────────────────
 
 model users {
@@ -222,6 +249,21 @@ model listings {
   images            listing_images[]
   bids              bids[]
   orders            orders[]
+  vehicle_details   listing_vehicle_details?
+}
+
+model listing_vehicle_details {
+  lvd_id           String           @id @default(uuid()) @map("_id")
+  lvd_listing_id   String           @unique
+  lvd_fuel_type    FuelType?
+  lvd_transmission TransmissionType?
+  lvd_body_type    BodyType?
+  lvd_ownership    OwnershipType?
+  lvd_year         Int?
+  lvd_kilometers   Int?
+  lvd_created_at   DateTime         @default(now())
+  lvd_updated_at   DateTime         @updatedAt
+  listing          listings         @relation(fields: [lvd_listing_id], references: [lst_id], onDelete: Cascade)
 }
 
 model listing_images {

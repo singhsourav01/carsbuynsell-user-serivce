@@ -1,4 +1,4 @@
-import { ListingStatus } from "@prisma/client";
+import { ListingStatus, FuelType, TransmissionType, BodyType, OwnershipType } from "@prisma/client";
 import prisma from "../configs/prisma.config";
 import { listingSelect } from "../constants/listing.constant";
 import { queryHandler } from "../utils/helper";
@@ -21,6 +21,7 @@ class HomeRepository {
     /**
      * Paginated listings with optional category (slug OR id) and type filters.
      * Passing no `category` returns ALL active listings (the "All" tab).
+     * Now supports vehicle detail filters: fuel_type, transmission, body_type, ownership, year, km
      */
     getActiveListings = async (query: ListingsQueryDTO) => {
         const page = Math.max(1, parseInt(query.page ?? "1", 10));
@@ -42,6 +43,61 @@ class HomeRepository {
         }
 
         if (query.type) where.lst_type = query.type;
+
+        // Search filter
+        if (query.search) {
+            where.OR = [
+                { lst_title: { contains: query.search } },
+                { lst_description: { contains: query.search } },
+            ];
+        }
+
+        // Price range filter
+        if (query.min_price || query.max_price) {
+            where.lst_price = {};
+            if (query.min_price) where.lst_price.gte = Number(query.min_price);
+            if (query.max_price) where.lst_price.lte = Number(query.max_price);
+        }
+
+        // Vehicle details filters
+        const vehicleFilters: any = {};
+        
+        if (query.fuel_type) {
+            const fuelTypes = query.fuel_type.split(',').map(f => f.trim().toUpperCase()) as FuelType[];
+            vehicleFilters.lvd_fuel_type = { in: fuelTypes };
+        }
+        
+        if (query.transmission) {
+            const transmissions = query.transmission.split(',').map(t => t.trim().toUpperCase()) as TransmissionType[];
+            vehicleFilters.lvd_transmission = { in: transmissions };
+        }
+        
+        if (query.body_type) {
+            const bodyTypes = query.body_type.split(',').map(b => b.trim().toUpperCase()) as BodyType[];
+            vehicleFilters.lvd_body_type = { in: bodyTypes };
+        }
+        
+        if (query.ownership) {
+            const ownerships = query.ownership.split(',').map(o => o.trim().toUpperCase()) as OwnershipType[];
+            vehicleFilters.lvd_ownership = { in: ownerships };
+        }
+        
+        if (query.min_year || query.max_year) {
+            vehicleFilters.lvd_year = {};
+            if (query.min_year) vehicleFilters.lvd_year.gte = Number(query.min_year);
+            if (query.max_year) vehicleFilters.lvd_year.lte = Number(query.max_year);
+        }
+        
+        if (query.min_km || query.max_km) {
+            vehicleFilters.lvd_kilometers = {};
+            if (query.min_km) vehicleFilters.lvd_kilometers.gte = Number(query.min_km);
+            if (query.max_km) vehicleFilters.lvd_kilometers.lte = Number(query.max_km);
+        }
+
+        // Apply vehicle filters if any exist
+        if (Object.keys(vehicleFilters).length > 0) {
+            where.vehicle_details = vehicleFilters;
+        }
 
         const [data, total] = await Promise.all([
             queryHandler(() =>
