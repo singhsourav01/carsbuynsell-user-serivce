@@ -16,6 +16,7 @@ import AdminRoutes from "./routes/admin.routes";
 import OtpRoutes from "./routes/otp.routes";
 import UserRoutes from "./routes/user.routes";
 import InternalRoutes from "./routes/internal.routes";
+import PasswordResetRoutes from "./routes/passwordReset.routes";
 
 // Marketplace routes
 import HomeRoutes from "./routes/home.routes";
@@ -58,6 +59,7 @@ app.use(API_ENDPOINTS.BASE, express.static("public"));
 app.use(API_ENDPOINTS.BASE, UserRoutes);
 app.use(API_ENDPOINTS.BASE, AdminRoutes);
 app.use(API_ENDPOINTS.BASE, OtpRoutes);
+app.use(API_ENDPOINTS.BASE, PasswordResetRoutes);
 app.use(API_ENDPOINTS.BASE + API_ENDPOINTS.INTERNAL, InternalRoutes);
 
 // ─── Marketplace Routes ───────────────────────────────────────────────────────

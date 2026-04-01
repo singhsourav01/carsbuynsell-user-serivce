@@ -214,6 +214,28 @@ model user_login_devices {
   user              users       @relation(fields: [uld_user_id], references: [user_id], onDelete: Cascade)
 }
 
+model password_reset_otp {
+  pro_id         String   @id @default(uuid()) @map("_id")
+  pro_user_id    String
+  pro_otp        String
+  pro_identifier String   // email or phone used for reset
+  pro_type       String   // "email" or "phone"
+  pro_is_used    Boolean  @default(false)
+  pro_expires_at DateTime
+  pro_created_at DateTime @default(now())
+  pro_updated_at DateTime @updatedAt
+}
+
+model password_reset_token {
+  prt_id         String   @id @default(uuid()) @map("_id")
+  prt_user_id    String
+  prt_token      String   @unique
+  prt_is_used    Boolean  @default(false)
+  prt_expires_at DateTime
+  prt_created_at DateTime @default(now())
+  prt_updated_at DateTime @updatedAt
+}
+
 // ─── Marketplace Models ───────────────────────────────────────────────────────
 
 model categories {

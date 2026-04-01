@@ -1,0 +1,70 @@
+import { ApiResponse, asyncHandler } from "common-microservices-utils";
+import { Request, Response } from "express";
+import { StatusCodes } from "http-status-codes";
+import PasswordResetService from "../services/passwordReset.service";
+
+class PasswordResetController {
+  private passwordResetService: PasswordResetService;
+
+  constructor() {
+    this.passwordResetService = new PasswordResetService();
+  }
+
+  /**
+   * POST /forgot-password
+   * Request body: { email: string, phone: string }
+   * Sends OTP to BOTH email and phone for dual verification
+   */
+  forgotPassword = asyncHandler(async (req: Request, res: Response) => {
+    const { email, phone } = req.body;
+
+    const result = await this.passwordResetService.forgotPassword({
+      email,
+      phone,
+    });
+
+    return res
+      .status(StatusCodes.OK)
+      .json(new ApiResponse(StatusCodes.OK, result, result.message));
+  });
+
+  /**
+   * POST /verify-reset-otp
+   * Request body: { email: string, phone: string, email_otp: string, phone_otp: string }
+   * Verifies BOTH OTPs and returns a reset token
+   */
+  verifyResetOtps = asyncHandler(async (req: Request, res: Response) => {
+    const { email, phone, email_otp, phone_otp } = req.body;
+
+    const result = await this.passwordResetService.verifyOtps({
+      email,
+      phone,
+      email_otp,
+      phone_otp,
+    });
+
+    return res
+      .status(StatusCodes.OK)
+      .json(new ApiResponse(StatusCodes.OK, result, result.message));
+  });
+
+  /**
+   * POST /reset-password
+   * Request body: { reset_token: string, new_password: string }
+   * Resets password using the token obtained after OTP verification
+   */
+  resetPassword = asyncHandler(async (req: Request, res: Response) => {
+    const { reset_token, new_password } = req.body;
+
+    const result = await this.passwordResetService.resetPassword({
+      reset_token,
+      new_password,
+    });
+
+    return res
+      .status(StatusCodes.OK)
+      .json(new ApiResponse(StatusCodes.OK, result, result.message));
+  });
+}
+
+export default PasswordResetController;

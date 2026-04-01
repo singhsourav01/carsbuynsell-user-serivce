@@ -68,6 +68,8 @@ export const API_ENDPOINTS = {
   SEND_PHONE_OTP: "/send-phone-otp",
   SEND_EMAIL_OTP: "/send-email-otp",
   RESET_PASSWORD: "/reset-password/:user_id",
+  FORGOT_PASSWORD: "/forgot-password",
+  VERIFY_RESET_OTP: "/verify-reset-otp",
   LOGOUT: "/logout/:uld_id",
 
   // Devices & Notifications
@@ -111,6 +113,8 @@ export const API_RESPONSES = {
   EMAIL_UPDATED: "Email updated successfully",
   USER_DEVICE_CREATED: "User login device created successfully",
   LOGOUT: "Log out successfully",
+  OTP_SENT_SUCCESSFULLY: "OTP sent successfully",
+  PASSWORD_RESET_SUCCESSFUL: "Password reset successful",
   USER_DEVICE_FETCHED: "User device fetched successfully",
   USER_DEVICE_UPDATED: "User device updated successfully",
   TOKENS_FETCHED_SUCCESSFULLY: "Tokens fetched successfully",
