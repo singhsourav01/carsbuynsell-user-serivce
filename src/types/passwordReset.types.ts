@@ -1,13 +1,12 @@
 export type ForgotPasswordRequestType = {
-  email: string;
-  phone: string;
+  email?: string;
+  phone?: string;
 };
 
 export type VerifyOtpRequestType = {
-  email: string;
-  phone: string;
-  email_otp: string;
-  phone_otp: string;
+  email?: string;
+  phone?: string;
+  otp: string;
 };
 
 export type ResetPasswordRequestType = {

@@ -23,134 +23,101 @@ class PasswordResetService {
   }
 
   /**
-   * Step 1: Request password reset - sends OTP to both email AND phone
+   * Step 1: Request password reset - sends OTP to either email OR phone
    */
   forgotPassword = async (data: ForgotPasswordRequestType) => {
     const { email, phone } = data;
 
-    if (!email || !phone) {
+    if (!email && !phone) {
       throw new ApiError(
         StatusCodes.BAD_REQUEST,
-        "Both email and phone number are required"
+        "Either email or phone number is required"
       );
     }
 
-    // Verify user exists with both email and phone
-    const userByEmail = await this.userRepository.getUserByEmail(email);
-    if (!userByEmail) {
-      throw new ApiError(StatusCodes.NOT_FOUND, API_ERRORS.NO_ACCOUNT_FOUND);
+    let user;
+    let identifier: string;
+    let otpType: "email" | "phone";
+
+    if (email) {
+      user = await this.userRepository.getUserByEmail(email);
+      if (!user) {
+        throw new ApiError(StatusCodes.NOT_FOUND, API_ERRORS.NO_ACCOUNT_FOUND);
+      }
+      identifier = email;
+      otpType = "email";
+    } else {
+      user = await this.userRepository.getUserByPhone(phone!);
+      if (!user) {
+        throw new ApiError(
+          StatusCodes.NOT_FOUND,
+          API_ERRORS.PHONE_NUMBER_DOSE_NOT_EXISTS
+        );
+      }
+      identifier = phone!;
+      otpType = "phone";
     }
 
-    const userByPhone = await this.userRepository.getUserByPhone(phone);
-    if (!userByPhone) {
-      throw new ApiError(
-        StatusCodes.NOT_FOUND,
-        API_ERRORS.PHONE_NUMBER_DOSE_NOT_EXISTS
-      );
-    }
-
-    // Verify both belong to the same user
-    if (userByEmail.user_id !== userByPhone.user_id) {
-      throw new ApiError(
-        StatusCodes.BAD_REQUEST,
-        "Email and phone do not belong to the same account"
-      );
-    }
-
-    const userId = userByEmail.user_id;
+    const userId = user.user_id;
 
     // Delete any existing OTPs for this user
-    await this.passwordResetRepository.deleteByUserIdAndType(userId, "email");
-    await this.passwordResetRepository.deleteByUserIdAndType(userId, "phone");
+    await this.passwordResetRepository.deleteByUserIdAndType(userId, otpType);
 
-    // Generate OTPs for both email and phone
-    const emailOtp = generateOtp();
-    const phoneOtp = generateOtp();
+    // Generate OTP
+    const otp = generateOtp();
     const expiresAt = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000);
 
-    // Store both OTPs
-    await Promise.all([
-      this.passwordResetRepository.create({
-        pro_user_id: userId,
-        pro_otp: emailOtp,
-        pro_identifier: email,
-        pro_type: "email",
-        pro_expires_at: expiresAt,
-      }),
-      this.passwordResetRepository.create({
-        pro_user_id: userId,
-        pro_otp: phoneOtp,
-        pro_identifier: phone,
-        pro_type: "phone",
-        pro_expires_at: expiresAt,
-      }),
-    ]);
+    // Store OTP
+    await this.passwordResetRepository.create({
+      pro_user_id: userId,
+      pro_otp: otp,
+      pro_identifier: identifier,
+      pro_type: otpType,
+      pro_expires_at: expiresAt,
+    });
 
     // TODO: Implement actual SMS/Email sending
-    // In production, send OTPs via SMS and Email services
-    console.log(`[DEV] Password reset EMAIL OTP for ${email}: ${emailOtp}`);
-    console.log(`[DEV] Password reset PHONE OTP for ${phone}: ${phoneOtp}`);
+    // In production, send OTP via SMS or Email service
+    console.log(`[DEV] Password reset OTP for ${identifier}: ${otp}`);
 
     return {
-      message: `OTPs sent to your email and phone. Valid for ${OTP_EXPIRY_MINUTES} minutes.`,
-      // Remove these in production - only for testing
-      ...(process.env.NODE_ENV === "development" && {
-        email_otp: emailOtp,
-        phone_otp: phoneOtp,
-      }),
+      message: `OTP sent to your ${otpType}. Valid for ${OTP_EXPIRY_MINUTES} minutes.`,
+      // Remove this in production - only for testing
+      ...(process.env.NODE_ENV === "development" && { otp }),
     };
   };
 
   /**
-   * Step 2: Verify both OTPs - returns a reset token if both are valid
+   * Step 2: Verify OTP - returns a reset token if valid
    */
   verifyOtps = async (data: VerifyOtpRequestType) => {
-    const { email, phone, email_otp, phone_otp } = data;
+    const { email, phone, otp } = data;
 
-    if (!email || !phone || !email_otp || !phone_otp) {
+    if ((!email && !phone) || !otp) {
       throw new ApiError(
         StatusCodes.BAD_REQUEST,
-        "Email, phone, email_otp, and phone_otp are all required"
+        "Either email or phone, along with OTP, is required"
       );
     }
 
-    // Verify email OTP
-    const emailOtpRecord = await this.passwordResetRepository.findValidOtp(
-      email,
-      email_otp,
-      "email"
+    const identifier = email || phone!;
+    const otpType: "email" | "phone" = email ? "email" : "phone";
+
+    // Verify OTP
+    const otpRecord = await this.passwordResetRepository.findValidOtp(
+      identifier,
+      otp,
+      otpType
     );
 
-    if (!emailOtpRecord) {
-      throw new ApiError(StatusCodes.BAD_REQUEST, "Invalid or expired email OTP");
+    if (!otpRecord) {
+      throw new ApiError(StatusCodes.BAD_REQUEST, "Invalid or expired OTP");
     }
 
-    // Verify phone OTP
-    const phoneOtpRecord = await this.passwordResetRepository.findValidOtp(
-      phone,
-      phone_otp,
-      "phone"
-    );
+    const userId = otpRecord.pro_user_id;
 
-    if (!phoneOtpRecord) {
-      throw new ApiError(StatusCodes.BAD_REQUEST, "Invalid or expired phone OTP");
-    }
-
-    // Verify both OTPs belong to the same user
-    if (emailOtpRecord.pro_user_id !== phoneOtpRecord.pro_user_id) {
-      throw new ApiError(
-        StatusCodes.BAD_REQUEST,
-        "OTPs do not belong to the same account"
-      );
-    }
-
-    const userId = emailOtpRecord.pro_user_id;
-
-    // Mark both OTPs as used
-    await Promise.all([
-      this.passwordResetRepository.markAsUsed(emailOtpRecord.pro_id),
-      this.passwordResetRepository.markAsUsed(phoneOtpRecord.pro_id),
-    ]);
+    // Mark OTP as used
+    await this.passwordResetRepository.markAsUsed(otpRecord.pro_id);
 
     // Delete any existing reset tokens for this user
     await this.passwordResetRepository.deleteResetTokensByUserId(userId);
@@ -172,7 +139,7 @@ class PasswordResetService {
     this.passwordResetRepository.deleteExpiredOtps().catch(console.error);
 
     return {
-      message: `Both OTPs verified successfully. Use the reset token to set your new password. Token valid for ${RESET_TOKEN_EXPIRY_MINUTES} minutes.`,
+      message: `OTP verified successfully. Use the reset token to set your new password. Token valid for ${RESET_TOKEN_EXPIRY_MINUTES} minutes.`,
       reset_token: resetToken,
     };
   };

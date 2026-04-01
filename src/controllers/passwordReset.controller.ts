@@ -12,8 +12,8 @@ class PasswordResetController {
 
   /**
    * POST /forgot-password
-   * Request body: { email: string, phone: string }
-   * Sends OTP to BOTH email and phone for dual verification
+   * Request body: { email?: string, phone?: string }
+   * Sends OTP to either email OR phone
    */
   forgotPassword = asyncHandler(async (req: Request, res: Response) => {
     const { email, phone } = req.body;
@@ -30,17 +30,16 @@ class PasswordResetController {
 
   /**
    * POST /verify-reset-otp
-   * Request body: { email: string, phone: string, email_otp: string, phone_otp: string }
-   * Verifies BOTH OTPs and returns a reset token
+   * Request body: { email?: string, phone?: string, otp: string }
+   * Verifies OTP and returns a reset token
    */
   verifyResetOtps = asyncHandler(async (req: Request, res: Response) => {
-    const { email, phone, email_otp, phone_otp } = req.body;
+    const { email, phone, otp } = req.body;
 
     const result = await this.passwordResetService.verifyOtps({
       email,
       phone,
-      email_otp,
-      phone_otp,
+      otp,
     });
 
     return res
