@@ -2,7 +2,6 @@ import { SubscriptionStatus } from "@prisma/client";
 import prisma from "../configs/prisma.config";
 import { subscriptionSelect, SUBSCRIPTION_LIMIT } from "../constants/subscription.constant";
 import { queryHandler } from "../utils/helper";
-import { startOfDay } from "date-fns";
 
 class SubscriptionRepository {
     findPlans = async () => {
@@ -21,8 +20,8 @@ class SubscriptionRepository {
     };
 
     /**
-     * Finds an active subscription for a user and resets daily uses if needed.
-     * Returns null if no valid subscription exists or daily limit is exhausted.
+     * Finds an active subscription for a user.
+     * Returns null if no valid subscription exists or all engagement slots are used.
      */
     findActiveByUserId = async (user_id: string) => {
         return queryHandler(async () => {
@@ -32,31 +31,12 @@ class SubscriptionRepository {
                     sub_status: SubscriptionStatus.ACTIVE,
                     sub_expires_at: { gt: new Date() },
                 },
-                select: {
-                    ...subscriptionSelect,
-                    sub_daily_uses_reset_date: true,
-                },
+                select: subscriptionSelect,
             });
 
             if (!subscription) return null;
 
-            const today = startOfDay(new Date());
-            const resetDate = startOfDay(new Date(subscription.sub_daily_uses_reset_date));
-
-            // If the reset date is before today, reset daily uses
-            if (resetDate < today) {
-                const updated = await prisma.subscriptions.update({
-                    where: { sub_id: subscription.sub_id },
-                    data: {
-                        sub_remaining_uses: SUBSCRIPTION_LIMIT,
-                        sub_daily_uses_reset_date: new Date(),
-                    },
-                    select: subscriptionSelect,
-                });
-                return updated;
-            }
-
-            // If daily uses are exhausted for today
+            // If all engagement slots are used, return null
             if (subscription.sub_remaining_uses <= 0) {
                 return null;
             }
@@ -66,8 +46,25 @@ class SubscriptionRepository {
     };
 
     /**
+     * Finds active subscription regardless of remaining uses.
+     * Used for checking if user has any active subscription.
+     */
+    findActiveSubscriptionAny = async (user_id: string) => {
+        return queryHandler(() =>
+            prisma.subscriptions.findFirst({
+                where: {
+                    sub_user_id: user_id,
+                    sub_status: SubscriptionStatus.ACTIVE,
+                    sub_expires_at: { gt: new Date() },
+                },
+                select: subscriptionSelect,
+            })
+        );
+    };
+
+    /**
      * Checks if a user can purchase a new subscription.
-     * Returns true if user has no active subscription OR if daily limit is exhausted.
+     * Returns true if user has no active subscription OR if all engagement slots are used.
      */
     canPurchaseSubscription = async (user_id: string) => {
         return queryHandler(async () => {
@@ -80,22 +77,18 @@ class SubscriptionRepository {
                 select: {
                     sub_id: true,
                     sub_remaining_uses: true,
-                    sub_daily_uses_reset_date: true,
                 },
             });
 
             // No active subscription - can purchase
             if (!subscription) return true;
 
-            const today = startOfDay(new Date());
-            const resetDate = startOfDay(new Date(subscription.sub_daily_uses_reset_date));
-
-            // If reset date is today and uses are exhausted - can purchase new subscription
-            if (resetDate >= today && subscription.sub_remaining_uses <= 0) {
+            // All engagement slots are used - can purchase new subscription
+            if (subscription.sub_remaining_uses <= 0) {
                 return true;
             }
 
-            // User has active subscription with uses remaining - cannot purchase
+            // User has active subscription with engagement slots available - cannot purchase
             return false;
         });
     };
@@ -149,7 +142,7 @@ class SubscriptionRepository {
         );
     };
 
-    /** Decrements remaining uses; expires subscription if uses reach 0. */
+    /** Decrements remaining uses when a new engagement is created. */
     decrementUses = async (sub_id: string, current_uses: number) => {
         const new_uses = current_uses - 1;
         return queryHandler(() =>
@@ -157,7 +150,18 @@ class SubscriptionRepository {
                 where: { sub_id },
                 data: {
                     sub_remaining_uses: new_uses,
-                    ...(new_uses === 0 && { sub_status: SubscriptionStatus.EXPIRED }),
+                },
+            })
+        );
+    };
+
+    /** Restores a use when an engagement is closed (auction ends). */
+    incrementUses = async (sub_id: string) => {
+        return queryHandler(() =>
+            prisma.subscriptions.update({
+                where: { sub_id },
+                data: {
+                    sub_remaining_uses: { increment: 1 },
                 },
             })
         );

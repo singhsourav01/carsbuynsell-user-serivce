@@ -251,6 +251,14 @@ class ListingService {
         await this.populateSignedUrls(result.listings as any[]);
         return result;
     };
+
+    /**
+     * Closes an auction (admin only).
+     * Restores votes to all bidders who had active engagements on this listing.
+     */
+    closeAuction = async (lst_id: string, new_status: "SOLD" | "EXPIRED") => {
+        return this.listingRepository.closeAuction(lst_id, new_status);
+    };
 }
 
 export default ListingService;

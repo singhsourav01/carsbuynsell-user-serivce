@@ -1,10 +1,9 @@
 import { ApiError } from "common-microservices-utils";
 import prisma from "../configs/prisma.config";
 import { bidSelect } from "../constants/bid.constant";
-import { SUBSCRIPTION_LIMIT } from "../constants/subscription.constant";
+import { SUBSCRIPTION_ERRORS } from "../constants/subscription.constant";
 import { queryHandler } from "../utils/helper";
 import { StatusCodes } from "http-status-codes";
-import { startOfDay } from "date-fns";
 
 class BidRepository {
     findByListingId = async (listing_id: string, page: number, take: number) => {
@@ -43,7 +42,8 @@ class BidRepository {
 
     /**
      * Places a bid using a Prisma transaction to prevent race conditions.
-     * Locks the listing row, validates bid amount, creates bid, and updates listing.
+     * Creates an engagement if this is the user's first bid on this listing.
+     * Multiple bids on the same listing don't consume additional votes.
      */
     placeBid = async (
         listing_id: string,
@@ -75,35 +75,53 @@ class BidRepository {
                     throw new ApiError(StatusCodes.BAD_REQUEST, "BID TOO LOW");
                 }
 
-                // Check subscription uses (within the same transaction)
-                const subscription = await tx.subscriptions.findFirst({
+                // Check if user already has an engagement for this listing
+                const existingEngagement = await tx.engagements.findUnique({
                     where: {
-                        sub_user_id: bidder_id,
-                        sub_status: "ACTIVE",
-                        sub_expires_at: { gt: new Date() },
+                        eng_user_id_eng_listing_id: {
+                            eng_user_id: bidder_id,
+                            eng_listing_id: listing_id,
+                        },
                     },
                 });
-                if (!subscription) throw new ApiError(StatusCodes.BAD_REQUEST, "USES EXHAUSTED");
 
-                const today = startOfDay(new Date());
-                const resetDate = startOfDay(new Date(subscription.sub_daily_uses_reset_date));
-                let remainingUses = subscription.sub_remaining_uses;
+                // If no existing engagement, we need to create one (uses a vote)
+                if (!existingEngagement) {
+                    // Check subscription has available engagement slots
+                    const subscription = await tx.subscriptions.findFirst({
+                        where: {
+                            sub_user_id: bidder_id,
+                            sub_status: "ACTIVE",
+                            sub_expires_at: { gt: new Date() },
+                        },
+                    });
 
-                // If reset date is before today, reset daily uses
-                if (resetDate < today) {
+                    if (!subscription) {
+                        throw new ApiError(StatusCodes.BAD_REQUEST, SUBSCRIPTION_ERRORS.SUBSCRIPTION_NOT_FOUND);
+                    }
+
+                    if (subscription.sub_remaining_uses <= 0) {
+                        throw new ApiError(StatusCodes.BAD_REQUEST, SUBSCRIPTION_ERRORS.ENGAGEMENT_LIMIT_REACHED);
+                    }
+
+                    // Create engagement record
+                    await tx.engagements.create({
+                        data: {
+                            eng_user_id: bidder_id,
+                            eng_subscription_id: subscription.sub_id,
+                            eng_listing_id: listing_id,
+                            eng_type: "AUCTION",
+                            eng_status: "ACTIVE",
+                        },
+                    });
+
+                    // Decrement subscription uses (lock a vote)
                     await tx.subscriptions.update({
                         where: { sub_id: subscription.sub_id },
                         data: {
-                            sub_remaining_uses: SUBSCRIPTION_LIMIT,
-                            sub_daily_uses_reset_date: new Date(),
+                            sub_remaining_uses: { decrement: 1 },
                         },
                     });
-                    remainingUses = SUBSCRIPTION_LIMIT;
-                }
-
-                // Check if daily uses are exhausted
-                if (remainingUses <= 0) {
-                    throw new ApiError(StatusCodes.BAD_REQUEST, "DAILY USES EXHAUSTED");
                 }
 
                 // Create bid record
@@ -127,15 +145,6 @@ class BidRepository {
                     data: {
                         lst_current_bid: bid_amount,
                         lst_bid_count: { increment: 1 },
-                    },
-                });
-
-                // Decrement subscription daily uses (no expiration on daily reset system)
-                const newUses = remainingUses - 1;
-                await tx.subscriptions.update({
-                    where: { sub_id: subscription.sub_id },
-                    data: {
-                        sub_remaining_uses: newUses,
                     },
                 });
 

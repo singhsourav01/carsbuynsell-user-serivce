@@ -82,6 +82,11 @@ enum SubscriptionStatus {
   CANCELLED
 }
 
+enum EngagementStatus {
+  ACTIVE
+  CLOSED
+}
+
 enum FuelType {
   PETROL
   DIESEL
@@ -145,6 +150,7 @@ model users {
   orders                     orders[]
   subscriptions              subscriptions[]
   vehicle_records            user_vehicle_record[]
+  engagements                engagements[]
   @@fulltext([user_full_name, user_email])
 }
 
@@ -272,6 +278,7 @@ model listings {
   bids              bids[]
   orders            orders[]
   vehicle_details   listing_vehicle_details?
+  engagements       engagements[]
 }
 
 model listing_vehicle_details {
@@ -341,13 +348,31 @@ model subscriptions {
   sub_starts_at             DateTime           @default(now())
   sub_expires_at            DateTime
   sub_remaining_uses        Int                @default(3)
-  sub_daily_uses_reset_date DateTime           @default(now()) // Date when daily uses were last reset
   sub_razorpay_order_id     String?            @unique
   sub_razorpay_payment_id   String?
   sub_created_at            DateTime           @default(now())
   sub_updated_at            DateTime           @updatedAt
   user                      users              @relation(fields: [sub_user_id], references: [user_id], onDelete: Cascade)
   plan                      subscription_plans @relation(fields: [sub_plan_id], references: [sp_id])
+  engagements               engagements[]
+}
+
+// Tracks active vehicle engagements (bids/orders) that lock subscription votes
+model engagements {
+  eng_id             String           @id @default(uuid()) @map("_id")
+  eng_user_id        String
+  eng_subscription_id String
+  eng_listing_id     String
+  eng_type           ListingType      // AUCTION or BUY_NOW
+  eng_status         EngagementStatus @default(ACTIVE)
+  eng_created_at     DateTime         @default(now())
+  eng_closed_at      DateTime?
+  eng_updated_at     DateTime         @updatedAt
+  user               users            @relation(fields: [eng_user_id], references: [user_id], onDelete: Cascade)
+  subscription       subscriptions    @relation(fields: [eng_subscription_id], references: [sub_id], onDelete: Cascade)
+  listing            listings         @relation(fields: [eng_listing_id], references: [lst_id], onDelete: Cascade)
+
+  @@unique([eng_user_id, eng_listing_id]) // One engagement per user per listing
 }
 
 // ─── Vehicle Category Enum ────────────────────────────────────────────────────

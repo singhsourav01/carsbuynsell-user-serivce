@@ -24,9 +24,11 @@ MarketplaceAdminRoutes.patch("/admin/users/:id/reject", authAdmin(), adminContro
 // GET   /admin/listings              - Get all listings
 // PATCH /admin/listings/:id/feature  - Feature/unfeature a listing
 // PATCH /admin/listings/:id/status   - Update listing status
+// POST  /admin/listings/:id/close-auction - Close auction and restore votes
 MarketplaceAdminRoutes.get("/admin/listings", authAdmin(), adminController.getAllListings);
 MarketplaceAdminRoutes.patch("/admin/listings/:id/feature", authAdmin(), adminController.featureListing);
 MarketplaceAdminRoutes.patch("/admin/listings/:id/status", authAdmin(), adminController.updateListingStatus);
+MarketplaceAdminRoutes.post("/admin/listings/:id/close-auction", authAdmin(), adminController.closeAuction);
 
 // ─── Order Management ─────────────────────────────────────────────────────────
 // GET /admin/orders - Get all orders

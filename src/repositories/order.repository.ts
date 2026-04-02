@@ -1,9 +1,8 @@
 import { OrderStatus } from "@prisma/client";
 import prisma from "../configs/prisma.config";
 import { orderSelect } from "../constants/order.constant";
-import { SUBSCRIPTION_LIMIT } from "../constants/subscription.constant";
+import { SUBSCRIPTION_ERRORS } from "../constants/subscription.constant";
 import { queryHandler } from "../utils/helper";
-import { startOfDay } from "date-fns";
 import { ApiError } from "common-microservices-utils";
 import { StatusCodes } from "http-status-codes";
 
@@ -56,7 +55,8 @@ class OrderRepository {
 
     /**
      * Creates an order using a transaction to prevent double-purchase.
-     * Checks listing is still ACTIVE, creates order, and marks listing as SOLD atomically.
+     * Buy Now immediately closes the engagement since the listing is sold.
+     * Vote is NOT restored for Buy Now (item is purchased, engagement complete).
      */
     buyNow = async (listing_id: string, buyer_id: string) => {
         return queryHandler(async () => {
@@ -79,7 +79,7 @@ class OrderRepository {
                 });
                 if (existingOrder) throw new ApiError(StatusCodes.BAD_REQUEST, "ALREADY_PURCHASED");
 
-                // Check subscription uses (within the same transaction)
+                // Check subscription has available engagement slots
                 const subscription = await tx.subscriptions.findFirst({
                     where: {
                         sub_user_id: buyer_id,
@@ -87,28 +87,34 @@ class OrderRepository {
                         sub_expires_at: { gt: new Date() },
                     },
                 });
-                if (!subscription) throw new ApiError(StatusCodes.BAD_REQUEST, "USES_EXHAUSTED");
 
-                const today = startOfDay(new Date());
-                const resetDate = startOfDay(new Date(subscription.sub_daily_uses_reset_date));
-                let remainingUses = subscription.sub_remaining_uses;
-
-                // If reset date is before today, reset daily uses
-                if (resetDate < today) {
-                    await tx.subscriptions.update({
-                        where: { sub_id: subscription.sub_id },
-                        data: {
-                            sub_remaining_uses: SUBSCRIPTION_LIMIT,
-                            sub_daily_uses_reset_date: new Date(),
-                        },
-                    });
-                    remainingUses = SUBSCRIPTION_LIMIT;
+                if (!subscription) {
+                    throw new ApiError(StatusCodes.BAD_REQUEST, SUBSCRIPTION_ERRORS.SUBSCRIPTION_NOT_FOUND);
                 }
 
-                // Check if daily uses are exhausted
-                if (remainingUses <= 0) {
-                    throw new ApiError(StatusCodes.BAD_REQUEST, "DAILY_USES_EXHAUSTED");
+                if (subscription.sub_remaining_uses <= 0) {
+                    throw new ApiError(StatusCodes.BAD_REQUEST, SUBSCRIPTION_ERRORS.ENGAGEMENT_LIMIT_REACHED);
                 }
+
+                // Create engagement record (immediately closed for Buy Now)
+                await tx.engagements.create({
+                    data: {
+                        eng_user_id: buyer_id,
+                        eng_subscription_id: subscription.sub_id,
+                        eng_listing_id: listing_id,
+                        eng_type: "BUY_NOW",
+                        eng_status: "CLOSED",
+                        eng_closed_at: new Date(),
+                    },
+                });
+
+                // Decrement subscription uses (this vote is permanently consumed for Buy Now)
+                await tx.subscriptions.update({
+                    where: { sub_id: subscription.sub_id },
+                    data: {
+                        sub_remaining_uses: { decrement: 1 },
+                    },
+                });
 
                 // Create order
                 const order = await tx.orders.create({
@@ -125,15 +131,6 @@ class OrderRepository {
                 await tx.listings.update({
                     where: { lst_id: listing_id },
                     data: { lst_status: "SOLD" },
-                });
-
-                // Decrement subscription daily uses (no expiration on daily reset system)
-                const newUses = remainingUses - 1;
-                await tx.subscriptions.update({
-                    where: { sub_id: subscription.sub_id },
-                    data: {
-                        sub_remaining_uses: newUses,
-                    },
                 });
 
                 return order;

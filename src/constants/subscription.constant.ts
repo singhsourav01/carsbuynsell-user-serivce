@@ -1,14 +1,14 @@
 export const SUBSCRIPTION_PRICE = 10000; // Fixed price in INR (rupees)
-export const SUBSCRIPTION_LIMIT = 3;      // Max bid/buy actions per day
+export const SUBSCRIPTION_LIMIT = 3;      // Max active vehicle engagements at a time
 
 export const SUBSCRIPTION_ERRORS = {
     PLAN_NOT_FOUND: "Subscription plan not found",
     SUBSCRIPTION_NOT_FOUND: "No active subscription found",
-    ALREADY_SUBSCRIBED: "You already have an active subscription with daily uses remaining",
+    ALREADY_SUBSCRIBED: "You already have an active subscription with available engagement slots",
     PAYMENT_FAILED: "Payment verification failed",
     INVALID_SIGNATURE: "Invalid payment signature",
-    USES_EXHAUSTED: "Your subscription has no remaining uses",
-    DAILY_USES_EXHAUSTED: "Daily limit of 3 actions exhausted. Please purchase a new subscription",
+    USES_EXHAUSTED: "All 3 engagement slots are in use. Wait for an auction to close or purchase a new subscription",
+    ENGAGEMENT_LIMIT_REACHED: "You have reached the maximum of 3 active engagements. Wait for an auction to close or purchase a new subscription",
     PENDING_SUB_NOT_FOUND: "No pending subscription found for this order",
 };
 
@@ -39,5 +39,16 @@ export const subscriptionSelect = {
             sp_description: true,
         },
     },
+};
+
+export const engagementSelect = {
+    eng_id: true,
+    eng_user_id: true,
+    eng_subscription_id: true,
+    eng_listing_id: true,
+    eng_type: true,
+    eng_status: true,
+    eng_created_at: true,
+    eng_closed_at: true,
 };
 

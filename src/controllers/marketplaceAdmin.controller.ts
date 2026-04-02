@@ -92,6 +92,27 @@ class MarketplaceAdminController {
             .json(new ApiResponse(StatusCodes.OK, listing, "Listing status updated"));
     });
 
+    /**
+     * Closes an auction and restores votes to all bidders.
+     * POST /admin/listings/:id/close-auction
+     * Body: { status: "SOLD" | "EXPIRED" }
+     */
+    closeAuction = asyncHandler(async (req: Request, res: Response) => {
+        const lst_id = String(req.params.id);
+        const { status } = req.body;
+        
+        if (status !== "SOLD" && status !== "EXPIRED") {
+            return res
+                .status(StatusCodes.BAD_REQUEST)
+                .json(new ApiResponse(StatusCodes.BAD_REQUEST, null, "Status must be SOLD or EXPIRED"));
+        }
+        
+        const result = await this.listingService.closeAuction(lst_id, status);
+        return res
+            .status(StatusCodes.OK)
+            .json(new ApiResponse(StatusCodes.OK, result, `Auction closed. ${result.engagements_closed} vote(s) restored to bidders.`));
+    });
+
     // ─── Order Management ─────────────────────────────────────────────────────
 
     getAllOrders = asyncHandler(async (req: Request, res: Response) => {

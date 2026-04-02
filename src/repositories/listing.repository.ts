@@ -233,6 +233,66 @@ class ListingRepository {
             })
         );
     };
+
+    /**
+     * Closes an auction and restores votes to all participating bidders.
+     * Sets listing status to SOLD or EXPIRED, closes all active engagements,
+     * and increments sub_remaining_uses for each affected subscription.
+     */
+    closeAuction = async (listing_id: string, new_status: "SOLD" | "EXPIRED") => {
+        return queryHandler(async () => {
+            return await prisma.$transaction(async (tx) => {
+                // Get the listing
+                const listing = await tx.listings.findUnique({
+                    where: { lst_id: listing_id },
+                });
+
+                if (!listing) throw new Error("LISTING_NOT_FOUND");
+                if (listing.lst_type !== "AUCTION") throw new Error("LISTING_NOT_AUCTION");
+                if (listing.lst_status !== "ACTIVE") throw new Error("LISTING_NOT_ACTIVE");
+
+                // Find all active engagements for this listing
+                const activeEngagements = await tx.engagements.findMany({
+                    where: {
+                        eng_listing_id: listing_id,
+                        eng_status: "ACTIVE",
+                    },
+                });
+
+                // Close all active engagements and restore votes
+                for (const engagement of activeEngagements) {
+                    // Mark engagement as closed
+                    await tx.engagements.update({
+                        where: { eng_id: engagement.eng_id },
+                        data: {
+                            eng_status: "CLOSED",
+                            eng_closed_at: new Date(),
+                        },
+                    });
+
+                    // Restore vote to the subscription (increment remaining uses)
+                    await tx.subscriptions.update({
+                        where: { sub_id: engagement.eng_subscription_id },
+                        data: {
+                            sub_remaining_uses: { increment: 1 },
+                        },
+                    });
+                }
+
+                // Update listing status
+                const updatedListing = await tx.listings.update({
+                    where: { lst_id: listing_id },
+                    data: { lst_status: new_status },
+                    select: listingSelect,
+                });
+
+                return {
+                    listing: updatedListing,
+                    engagements_closed: activeEngagements.length,
+                };
+            });
+        });
+    };
 }
 
 export default ListingRepository;
