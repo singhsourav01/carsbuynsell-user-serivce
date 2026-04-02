@@ -17,7 +17,6 @@ class ListingController {
     }
 
     getAll = asyncHandler(async (req: Request, res: Response) => {
-        console.log("Fetching listings with query:", req.query);
         const query = req.query as ListingQueryDTO;
         const result = await this.listingService.getAll(query);
         return res
@@ -27,7 +26,6 @@ class ListingController {
 
     getById = asyncHandler(async (req: Request, res: Response) => {
         const lst_id = String(req.params.id);
-        console.log('inside this"')
         const listing = await this.listingService.getById(lst_id);
         return res
             .status(StatusCodes.OK)
@@ -35,10 +33,9 @@ class ListingController {
     });
 
     create = asyncHandler(async (req: AuthRequest, res: Response) => {
-        console.log("Creating listing with body:", req.body, req.query);
-        const user_id = req.query.user_id;
+        const user_id = req.user?.user_id;
         const dto: CreateListingDTO = req.body;
-        const listing = await this.listingService.create(user_id as string, dto);
+        const listing = await this.listingService.create(user_id, dto);
         return res
             .status(StatusCodes.CREATED)
             .json(new ApiResponse(StatusCodes.CREATED, listing, LISTING_RESPONSES.LISTING_CREATED));
@@ -46,9 +43,9 @@ class ListingController {
 
     update = asyncHandler(async (req: AuthRequest, res: Response) => {
         const lst_id = String(req.params.id);
-        const user_id = req.params.user_id;
+        const user_id = req.user?.user_id;
         const dto: UpdateListingDTO = req.body;
-        const listing = await this.listingService.update(lst_id, user_id as string, dto);
+        const listing = await this.listingService.update(lst_id, user_id, dto);
         return res
             .status(StatusCodes.OK)
             .json(new ApiResponse(StatusCodes.OK, listing, LISTING_RESPONSES.LISTING_UPDATED));
@@ -56,12 +53,13 @@ class ListingController {
 
     delete = asyncHandler(async (req: AuthRequest, res: Response) => {
         const lst_id = String(req.params.id);
-        const { user_id } = req.user;
+        const user_id = req.user?.user_id;
         await this.listingService.delete(lst_id, user_id);
         return res
             .status(StatusCodes.OK)
             .json(new ApiResponse(StatusCodes.OK, null, LISTING_RESPONSES.LISTING_DELETED));
     });
+
     getListingByCategoryId = asyncHandler(async (req: Request, res: Response) => {
         const cat_id = String(req.params.id);
         const page = parseInt(req.query.page as string) || 1;
