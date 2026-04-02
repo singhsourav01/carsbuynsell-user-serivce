@@ -2,30 +2,21 @@ import { ApiError } from "common-microservices-utils";
 import { StatusCodes } from "http-status-codes";
 import { BID_ERRORS } from "../constants/bid.constant";
 import { LISTING_ERRORS } from "../constants/listing.constant";
-import { SUBSCRIPTION_ERRORS } from "../constants/subscription.constant";
 import BidRepository from "../repositories/bid.repository";
 import ListingRepository from "../repositories/listing.repository";
-import SubscriptionRepository from "../repositories/subscription.repository";
 
 class BidService {
     private bidRepository: BidRepository;
     private listingRepository: ListingRepository;
-    private subscriptionRepository: SubscriptionRepository;
 
     constructor() {
         this.bidRepository = new BidRepository();
         this.listingRepository = new ListingRepository();
-        this.subscriptionRepository = new SubscriptionRepository();
     }
 
     placeBid = async (listing_id: string, bidder_id: string, bid_amount: number) => {
-        // 1. Validate active subscription
-        console.log(bidder_id, " here is active bidder");
-        const subscription = await this.subscriptionRepository.findActiveByUserId(bidder_id);
-        if (!subscription)
-            throw new ApiError(StatusCodes.FORBIDDEN, SUBSCRIPTION_ERRORS.SUBSCRIPTION_NOT_FOUND);
-
-        // 2. Delegate to repository transaction (all listing/bid validation happens inside)
+        // Note: Subscription validation moved inside repository transaction
+        // This allows users with existing engagements to bid even if votes are exhausted
         try {
             return await this.bidRepository.placeBid(listing_id, bidder_id, bid_amount);
         } catch (err: any) {

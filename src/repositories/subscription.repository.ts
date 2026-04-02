@@ -20,26 +20,23 @@ class SubscriptionRepository {
     };
 
     /**
-     * Finds an active subscription for a user.
-     * Returns null if no valid subscription exists or all engagement slots are used.
+     * Finds an active subscription for a user with available engagement slots.
+     * Prioritizes subscriptions with remaining uses, ordered by newest first.
      */
     findActiveByUserId = async (user_id: string) => {
         return queryHandler(async () => {
+            // Find subscription with available slots (sub_remaining_uses > 0)
+            // Order by created_at DESC to get the newest subscription first
             const subscription = await prisma.subscriptions.findFirst({
                 where: {
                     sub_user_id: user_id,
                     sub_status: SubscriptionStatus.ACTIVE,
                     sub_expires_at: { gt: new Date() },
+                    sub_remaining_uses: { gt: 0 }, // Only subscriptions with available slots
                 },
                 select: subscriptionSelect,
+                orderBy: { sub_created_at: "desc" }, // Newest first
             });
-
-            if (!subscription) return null;
-
-            // If all engagement slots are used, return null
-            if (subscription.sub_remaining_uses <= 0) {
-                return null;
-            }
 
             return subscription;
         });

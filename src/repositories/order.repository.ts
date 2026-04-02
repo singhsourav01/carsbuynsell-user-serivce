@@ -80,20 +80,19 @@ class OrderRepository {
                 if (existingOrder) throw new ApiError(StatusCodes.BAD_REQUEST, "ALREADY_PURCHASED");
 
                 // Check subscription has available engagement slots
+                // Order by created_at DESC + filter for remaining_uses > 0 to get newest valid subscription
                 const subscription = await tx.subscriptions.findFirst({
                     where: {
                         sub_user_id: buyer_id,
                         sub_status: "ACTIVE",
                         sub_expires_at: { gt: new Date() },
+                        sub_remaining_uses: { gt: 0 },
                     },
+                    orderBy: { sub_created_at: "desc" },
                 });
 
                 if (!subscription) {
                     throw new ApiError(StatusCodes.BAD_REQUEST, SUBSCRIPTION_ERRORS.SUBSCRIPTION_NOT_FOUND);
-                }
-
-                if (subscription.sub_remaining_uses <= 0) {
-                    throw new ApiError(StatusCodes.BAD_REQUEST, SUBSCRIPTION_ERRORS.ENGAGEMENT_LIMIT_REACHED);
                 }
 
                 // Create engagement record (immediately closed for Buy Now)

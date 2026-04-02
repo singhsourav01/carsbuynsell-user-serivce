@@ -10,7 +10,10 @@ class ListingRepository {
         const take = Number(query.page_size || "10");
         const skip = (page - 1) * take;
 
-        const where: any = {};
+        // Default to ACTIVE status unless explicitly specified (admin may want to see all)
+        const where: any = {
+            lst_status: query.status ? query.status as ListingStatus : ListingStatus.ACTIVE
+        };
 
         if (query.search) {
             where.OR = [
@@ -20,7 +23,6 @@ class ListingRepository {
         }
         if (query.category) where.lst_category_id = query.category;
         if (query.type) where.lst_type = query.type as ListingType;
-        if (query.status) where.lst_status = query.status as ListingStatus;
         if (query.is_featured === "true") where.lst_is_featured = true;
         if (query.min_price || query.max_price) {
             where.lst_price = {};
@@ -143,16 +145,17 @@ class ListingRepository {
 
     getListingByCategoryId = async (cat_id: string, page: number, take: number) => {
         const skip = (page - 1) * take;
+        const where = { lst_category_id: cat_id, lst_status: ListingStatus.ACTIVE };
         const [listings, count] = await queryHandler(() =>
             prisma.$transaction([
                 prisma.listings.findMany({
-                    where: { lst_category_id: cat_id },
+                    where,
                     select: listingSelect,
                     take,
                     skip,
                     orderBy: { lst_created_at: "desc" },
                 }),
-                prisma.listings.count({ where: { lst_category_id: cat_id } }),
+                prisma.listings.count({ where }),
             ])
         );
         return { listings, count, page, take };

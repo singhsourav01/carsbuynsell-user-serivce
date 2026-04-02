@@ -87,24 +87,38 @@ class BidRepository {
 
                 // If no existing engagement, we need to create one (uses a vote)
                 if (!existingEngagement) {
-                    // Check subscription has available engagement slots
+                    // Find ANY active subscription with available votes
+                    // User may have multiple subscriptions - use the one with available votes
                     const subscription = await tx.subscriptions.findFirst({
                         where: {
                             sub_user_id: bidder_id,
                             sub_status: "ACTIVE",
                             sub_expires_at: { gt: new Date() },
+                            sub_remaining_uses: { gt: 0 },
                         },
+                        orderBy: { sub_created_at: "desc" }, // Prefer newest subscription
                     });
 
                     if (!subscription) {
-                        throw new ApiError(StatusCodes.BAD_REQUEST, SUBSCRIPTION_ERRORS.SUBSCRIPTION_NOT_FOUND);
+                        // Check if user has ANY subscription at all (to give better error message)
+                        const anySubscription = await tx.subscriptions.findFirst({
+                            where: {
+                                sub_user_id: bidder_id,
+                                sub_status: "ACTIVE",
+                                sub_expires_at: { gt: new Date() },
+                            },
+                        });
+
+                        if (anySubscription) {
+                            // Has subscription but no votes left
+                            throw new ApiError(StatusCodes.BAD_REQUEST, SUBSCRIPTION_ERRORS.ENGAGEMENT_LIMIT_REACHED);
+                        } else {
+                            // No subscription at all
+                            throw new ApiError(StatusCodes.BAD_REQUEST, SUBSCRIPTION_ERRORS.SUBSCRIPTION_NOT_FOUND);
+                        }
                     }
 
-                    if (subscription.sub_remaining_uses <= 0) {
-                        throw new ApiError(StatusCodes.BAD_REQUEST, SUBSCRIPTION_ERRORS.ENGAGEMENT_LIMIT_REACHED);
-                    }
-
-                    // Create engagement record
+                    // Create engagement record linked to this subscription
                     await tx.engagements.create({
                         data: {
                             eng_user_id: bidder_id,
@@ -123,6 +137,7 @@ class BidRepository {
                         },
                     });
                 }
+                // If existingEngagement exists, user can bid without using a new vote
 
                 // Create bid record
                 const bid = await tx.bids.create({
