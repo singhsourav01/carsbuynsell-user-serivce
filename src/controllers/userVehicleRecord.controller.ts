@@ -37,7 +37,7 @@ class UserVehicleRecordController {
     });
 
     create = asyncHandler(async (req: AuthRequest, res: Response) => {
-        const user_id = req.query.user_id as string;
+        const user_id = req.user?.user_id;
         const dto: CreateUserVehicleRecordDTO = req.body;
         const record = await this.vehicleRecordService.create(user_id, dto);
         return res
@@ -47,7 +47,7 @@ class UserVehicleRecordController {
 
     update = asyncHandler(async (req: AuthRequest, res: Response) => {
         const uvr_id = String(req.params.id);
-        const user_id = req.query.user_id as string;
+        const user_id = req.user?.user_id;
         const dto: UpdateUserVehicleRecordDTO = req.body;
         const record = await this.vehicleRecordService.update(uvr_id, user_id, dto);
         return res
@@ -57,7 +57,7 @@ class UserVehicleRecordController {
 
     delete = asyncHandler(async (req: AuthRequest, res: Response) => {
         const uvr_id = String(req.params.id);
-        const user_id = req.query.user_id as string;
+        const user_id = req.user?.user_id;
         await this.vehicleRecordService.delete(uvr_id, user_id);
         return res
             .status(StatusCodes.OK)
@@ -65,7 +65,7 @@ class UserVehicleRecordController {
     });
 
     getMyVehicleRecords = asyncHandler(async (req: AuthRequest, res: Response) => {
-        const user_id = req.query.user_id as string;
+        const user_id = req.user?.user_id;
         const page = parseInt(req.query.page as string) || 1;
         const take = parseInt(req.query.take as string) || 10;
         const result = await this.vehicleRecordService.getMyVehicleRecords(user_id, page, take);
