@@ -3,7 +3,7 @@ import ListingController from "../controllers/listing.controller";
 import ListingImageController from "../controllers/listingImage.controller";
 import BidController from "../controllers/bid.controller";
 import OrderController from "../controllers/order.controller";
-import { authUser } from "../middlewares/auth.middleware";
+import { auth } from "../middlewares/auth.middleware";
 
 const ListingRoutes = express.Router();
 const listingController = new ListingController();
@@ -27,27 +27,27 @@ ListingRoutes.route("/listings/category/:id")
 // POST   /listings/:id/images                       - Add images
 // DELETE /listings/:id/images/:imageId              - Delete image
 // PATCH  /listings/:id/images/:imageId/reorder      - Reorder image
-ListingRoutes.post("/listings/:id/images", authUser(), listingImageController.addImages);
-ListingRoutes.delete("/listings/:id/images/:imageId", authUser(), listingImageController.deleteImage);
-ListingRoutes.patch("/listings/:id/images/:imageId/reorder", authUser(), listingImageController.reorderImage);
+ListingRoutes.post("/listings/:id/images", auth(), listingImageController.addImages);
+ListingRoutes.delete("/listings/:id/images/:imageId", auth(), listingImageController.deleteImage);
+ListingRoutes.patch("/listings/:id/images/:imageId/reorder", auth(), listingImageController.reorderImage);
 
 // ─── Bidding ──────────────────────────────────────────────────────────────────
 // POST /listings/:id/bid   - Place a bid (auth + subscription required)
 // GET  /listings/:id/bids  - Get bids for a listing (public)
-ListingRoutes.post("/listings/:id/bid", authUser(), bidController.placeBid);
-ListingRoutes.get("/listings/:id/bids", authUser(),  bidController.getBidsByListing);
-ListingRoutes.get("/listings/live-bids",authUser(),  bidController.getAllLiveBids);
+ListingRoutes.post("/listings/:id/bid", auth(), bidController.placeBid);
+ListingRoutes.get("/listings/:id/bids", auth(),  bidController.getBidsByListing);
+ListingRoutes.get("/listings/live-bids",auth(),  bidController.getAllLiveBids);
 
 // ─── Buy Now ──────────────────────────────────────────────────────────────────
 // POST /listings/:id/buy - Buy Now (auth + subscription required)
-ListingRoutes.post("/listings/:id/buy", authUser(), orderController.buyNow);
+ListingRoutes.post("/listings/:id/buy", auth(), orderController.buyNow);
 
 // GET    /listings/:id  - Get listing by ID (public)
 // PATCH  /listings/:id  - Update listing (auth, seller only)
 // DELETE /listings/:id  - Delete listing (auth, seller only)
 ListingRoutes.get("/listings/:id", listingController.getById);
-ListingRoutes.patch("/listings/:id", authUser(), listingController.update);
-ListingRoutes.delete("/listings/:id", authUser(), listingController.delete);
+ListingRoutes.patch("/listings/:id", auth(), listingController.update);
+ListingRoutes.delete("/listings/:id", auth(), listingController.delete);
 
 export default ListingRoutes;
 
