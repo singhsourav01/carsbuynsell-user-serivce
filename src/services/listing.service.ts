@@ -204,8 +204,23 @@ class ListingService {
         if (dto.lst_price !== undefined) data.lst_price = dto.lst_price;
         if (dto.lst_status !== undefined) data.lst_status = dto.lst_status;
         if (dto.lst_category_id !== undefined) data.lst_category_id = dto.lst_category_id;
+        if (dto.lst_type !== undefined) data.lst_type = dto.lst_type;
         if (dto.lst_auction_end !== undefined) data.lst_auction_end = new Date(dto.lst_auction_end);
         if (dto.lst_min_increment !== undefined) data.lst_min_increment = dto.lst_min_increment;
+        
+        // Clear auction fields when switching to BUY_NOW
+        if (dto.lst_type === "BUY_NOW") {
+            data.lst_auction_end = null;
+            data.lst_current_bid = null;
+        }
+        
+        // Set auction fields when switching to AUCTION
+        if (dto.lst_type === "AUCTION") {
+            if (!dto.lst_auction_end)
+                throw new ApiError(StatusCodes.BAD_REQUEST, "Auction end date is required for auction listings");
+            data.lst_current_bid = listing.lst_price;
+            data.lst_min_increment = dto.lst_min_increment ?? listing.lst_min_increment ?? 1;
+        }
 
         const updatedListing = await this.listingRepository.update(lst_id, data);
 
