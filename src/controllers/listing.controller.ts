@@ -7,6 +7,7 @@ import { CreateListingDTO, ListingQueryDTO, UpdateListingDTO } from "../types/li
 
 interface AuthRequest extends Request {
     user?: any;
+    auth?: any; // express-jwt 7.x uses req.auth
 }
 
 class ListingController {
@@ -15,6 +16,11 @@ class ListingController {
     constructor() {
         this.listingService = new ListingService();
     }
+
+    // Helper to get user_id from either req.auth (express-jwt 7.x) or req.user
+    private getUserId = (req: AuthRequest): string => {
+        return req.auth?.user_id || req.user?.user_id;
+    };
 
     getAll = asyncHandler(async (req: Request, res: Response) => {
         const query = req.query as ListingQueryDTO;
@@ -33,9 +39,7 @@ class ListingController {
     });
 
     create = asyncHandler(async (req: AuthRequest, res: Response) => {
-        console.log(req.user?.user_id, "user id in listing controller");
-        console.log(req.body, "body in listing controller");
-        const user_id = req.user?.user_id;
+        const user_id = this.getUserId(req);
         const dto: CreateListingDTO = req.body;
         const listing = await this.listingService.create(user_id, dto);
         return res
@@ -45,7 +49,7 @@ class ListingController {
 
     update = asyncHandler(async (req: AuthRequest, res: Response) => {
         const lst_id = String(req.params.id);
-        const user_id = req.user?.user_id;
+        const user_id = this.getUserId(req);
         const dto: UpdateListingDTO = req.body;
         const listing = await this.listingService.update(lst_id, user_id, dto);
         return res
@@ -55,7 +59,7 @@ class ListingController {
 
     delete = asyncHandler(async (req: AuthRequest, res: Response) => {
         const lst_id = String(req.params.id);
-        const user_id = req.user?.user_id;
+        const user_id = this.getUserId(req);
         await this.listingService.delete(lst_id, user_id);
         return res
             .status(StatusCodes.OK)

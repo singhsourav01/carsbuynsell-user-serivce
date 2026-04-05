@@ -80,6 +80,8 @@ export const auth = () => {
       requestProperty: STRINGS.USER,
     })(req, res, (err) => {
       if (err) return next(err);
+      console.log("Auth middleware - req.user:", req.user);
+      console.log("Auth middleware - req.auth:", req.auth);
       next();
     });
   };
