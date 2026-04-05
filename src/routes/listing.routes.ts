@@ -3,7 +3,7 @@ import ListingController from "../controllers/listing.controller";
 import ListingImageController from "../controllers/listingImage.controller";
 import BidController from "../controllers/bid.controller";
 import OrderController from "../controllers/order.controller";
-import { auth } from "../middlewares/auth.middleware";
+import { auth, authAdmin } from "../middlewares/auth.middleware";
 
 const ListingRoutes = express.Router();
 const listingController = new ListingController();
@@ -27,7 +27,7 @@ ListingRoutes.route("/listings/category/:id")
 // POST   /listings/:id/images                       - Add images
 // DELETE /listings/:id/images/:imageId              - Delete image
 // PATCH  /listings/:id/images/:imageId/reorder      - Reorder image
-ListingRoutes.post("/listings/:id/images", auth(), listingImageController.addImages);
+ListingRoutes.post("/listings/:id/images", authAdmin(), listingImageController.addImages);
 ListingRoutes.delete("/listings/:id/images/:imageId", auth(), listingImageController.deleteImage);
 ListingRoutes.patch("/listings/:id/images/:imageId/reorder", auth(), listingImageController.reorderImage);
 
