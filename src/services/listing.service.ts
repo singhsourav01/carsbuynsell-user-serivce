@@ -100,8 +100,7 @@ class ListingService {
                         ...listing,
                         user_portfolio: userPortfolio
                     };
-                } catch (error) {
-                    console.error("Portfolio fetch failed for seller:", listing.lst_seller_id);
+                } catch {
                     return {
                         ...listing,
                         user_portfolio: []
@@ -140,8 +139,8 @@ class ListingService {
                     file_signed_url: file.file_signed_url
                 }));
             }
-        } catch (error) {
-            console.error("Portfolio fetch failed for seller:", (listing as any).lst_seller_id);
+        } catch {
+            // Seller has no portfolio files - this is expected
         }
 
         // Increment view count (fire-and-forget)
