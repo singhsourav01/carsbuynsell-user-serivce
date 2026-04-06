@@ -26,7 +26,7 @@ MarketplaceAdminRoutes.patch("/admin/users/:id/reject", authAdmin(), adminContro
 // PATCH /admin/listings/:id/status   - Update listing status
 // POST  /admin/listings/:id/close-auction - Close auction and restore votes
 MarketplaceAdminRoutes.get("/admin/listings", authAdmin(), adminController.getAllListings);
-MarketplaceAdminRoutes.patch("/admin/listings/:id/feature", auth(), adminController.featureListing);
+MarketplaceAdminRoutes.patch("/admin/listings/:id/feature", adminController.featureListing);
 MarketplaceAdminRoutes.patch("/admin/listings/:id/status", authAdmin(), adminController.updateListingStatus);
 MarketplaceAdminRoutes.post("/admin/listings/:id/close-auction", authAdmin(), adminController.closeAuction);
 
