@@ -39,6 +39,8 @@ export const uploadFiles = async (
 
 // Get multiple files by IDs (returns signed URLs)
 export const getFilesByIds = async (fileIds: string[], token?: string) => {
+  if (!fileIds || fileIds.length === 0) return [];
+  
   try {
     const { data } = await axios.post(
       `${FILE_SERVICE_URL}/get`,
@@ -50,9 +52,10 @@ export const getFilesByIds = async (fileIds: string[], token?: string) => {
         },
       }
     );
-    return data?.data;
-  } catch (error) {
-    handleAxiosError(error);
+    return data?.data || [];
+  } catch {
+    // Return empty array instead of throwing - missing files shouldn't break the response
+    return [];
   }
 };
 

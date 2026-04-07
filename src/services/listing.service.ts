@@ -62,11 +62,13 @@ class ListingService {
                 }
                 if (listing.seller?.user_profile_image_file_id) {
                     const signedUrl = fileMap.get(listing.seller.user_profile_image_file_id);
-                    listing.seller.user_profile_image_file_id = signedUrl ?? null;
+                    if (signedUrl) {
+                        listing.seller.user_profile_image_file_id = signedUrl;
+                    }
                 }
             }
-        } catch (error) {
-            console.error("Failed to fetch signed URLs:", error);
+        } catch {
+            // Silently fail - images are non-critical
         }
     };
 
