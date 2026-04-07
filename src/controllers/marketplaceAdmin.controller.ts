@@ -113,6 +113,55 @@ class MarketplaceAdminController {
             .json(new ApiResponse(StatusCodes.OK, result, `Auction closed. ${result.engagements_closed} vote(s) restored to bidders.`));
     });
 
+    // ─── Auction Management ───────────────────────────────────────────────────
+
+    /**
+     * Get all auctions with pagination and filters
+     * GET /admin/auctions?page=1&page_size=10&status=ACTIVE&search=&category=
+     */
+    getAllAuctions = asyncHandler(async (req: Request, res: Response) => {
+        const query = req.query as any;
+        const result = await this.listingService.getAllAuctions(query);
+        return res
+            .status(StatusCodes.OK)
+            .json(new ApiResponse(StatusCodes.OK, result, "Auctions fetched successfully"));
+    });
+
+    /**
+     * Get auction details with all participants/bidders
+     * GET /admin/auctions/:id
+     */
+    getAuctionDetails = asyncHandler(async (req: Request, res: Response) => {
+        const lst_id = String(req.params.id);
+        const result = await this.listingService.getAuctionWithParticipants(lst_id);
+        return res
+            .status(StatusCodes.OK)
+            .json(new ApiResponse(StatusCodes.OK, result, "Auction details fetched successfully"));
+    });
+
+    /**
+     * Update auction details (admin can modify any field)
+     * PATCH /admin/auctions/:id
+     */
+    updateAuction = asyncHandler(async (req: Request, res: Response) => {
+        const lst_id = String(req.params.id);
+        const updateData: any = {};
+        
+        // Allow updating specific auction fields
+        if (req.body.lst_title !== undefined) updateData.lst_title = req.body.lst_title;
+        if (req.body.lst_description !== undefined) updateData.lst_description = req.body.lst_description;
+        if (req.body.lst_price !== undefined) updateData.lst_price = req.body.lst_price;
+        if (req.body.lst_min_increment !== undefined) updateData.lst_min_increment = req.body.lst_min_increment;
+        if (req.body.lst_auction_end !== undefined) updateData.lst_auction_end = new Date(req.body.lst_auction_end);
+        if (req.body.lst_status !== undefined) updateData.lst_status = req.body.lst_status;
+        if (req.body.lst_is_featured !== undefined) updateData.lst_is_featured = req.body.lst_is_featured;
+
+        const result = await this.listingService.adminUpdateListing(lst_id, updateData);
+        return res
+            .status(StatusCodes.OK)
+            .json(new ApiResponse(StatusCodes.OK, result, "Auction updated successfully"));
+    });
+
     // ─── Order Management ─────────────────────────────────────────────────────
 
     getAllOrders = asyncHandler(async (req: Request, res: Response) => {

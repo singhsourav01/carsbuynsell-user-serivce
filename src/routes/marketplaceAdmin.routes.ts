@@ -30,6 +30,14 @@ MarketplaceAdminRoutes.patch("/admin/listings/:id/feature", adminController.feat
 MarketplaceAdminRoutes.patch("/admin/listings/:id/status", authAdmin(), adminController.updateListingStatus);
 MarketplaceAdminRoutes.post("/admin/listings/:id/close-auction", authAdmin(), adminController.closeAuction);
 
+// ─── Auction Management ───────────────────────────────────────────────────────
+// GET   /admin/auctions              - Get all auctions (paginated)
+// GET   /admin/auctions/:id          - Get auction details with participants
+// PATCH /admin/auctions/:id          - Update auction details
+MarketplaceAdminRoutes.get("/admin/auctions", authAdmin(), adminController.getAllAuctions);
+MarketplaceAdminRoutes.get("/admin/auctions/:id", authAdmin(), adminController.getAuctionDetails);
+MarketplaceAdminRoutes.patch("/admin/auctions/:id", authAdmin(), adminController.updateAuction);
+
 // ─── Order Management ─────────────────────────────────────────────────────────
 // GET /admin/orders - Get all orders
 MarketplaceAdminRoutes.get("/admin/orders", authAdmin(), adminController.getAllOrders);

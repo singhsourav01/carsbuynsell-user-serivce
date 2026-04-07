@@ -273,6 +273,59 @@ class ListingService {
     closeAuction = async (lst_id: string, new_status: "SOLD" | "EXPIRED") => {
         return this.listingRepository.closeAuction(lst_id, new_status);
     };
+
+    /**
+     * Get all auctions with pagination (Admin)
+     */
+    getAllAuctions = async (query: {
+        page?: string;
+        page_size?: string;
+        search?: string;
+        status?: string;
+        category?: string;
+    }) => {
+        const result = await this.listingRepository.findAllAuctions(query);
+        await this.populateSignedUrls(result.auctions as any[]);
+        return result;
+    };
+
+    /**
+     * Get auction details with all participants/bidders (Admin)
+     */
+    getAuctionWithParticipants = async (lst_id: string) => {
+        const auction = await this.listingRepository.findAuctionWithParticipants(lst_id);
+        if (!auction)
+            throw new ApiError(StatusCodes.NOT_FOUND, LISTING_ERRORS.LISTING_NOT_FOUND);
+        if (auction.lst_type !== "AUCTION")
+            throw new ApiError(StatusCodes.BAD_REQUEST, LISTING_ERRORS.LISTING_NOT_AUCTION);
+
+        await this.populateSignedUrls([auction as any]);
+
+        // Get unique participants from engagements with their highest bid
+        const participants = auction.engagements.map((eng: any) => {
+            const userBids = auction.bids.filter((b: any) => b.bidder.user_id === eng.user.user_id);
+            const highestBid = userBids.length > 0 ? Math.max(...userBids.map((b: any) => Number(b.bid_amount))) : 0;
+            const bidCount = userBids.length;
+
+            return {
+                user: eng.user,
+                engagement_status: eng.eng_status,
+                joined_at: eng.eng_created_at,
+                highest_bid: highestBid,
+                total_bids: bidCount,
+            };
+        });
+
+        // Sort participants by highest bid (descending)
+        participants.sort((a: any, b: any) => b.highest_bid - a.highest_bid);
+
+        return {
+            ...auction,
+            participants,
+            total_participants: auction.engagements.length,
+            total_bids: auction.bids.length,
+        };
+    };
 }
 
 export default ListingService;

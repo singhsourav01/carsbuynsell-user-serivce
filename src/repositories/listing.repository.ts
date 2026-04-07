@@ -296,6 +296,115 @@ class ListingRepository {
             });
         });
     };
+
+    /**
+     * Find all auctions with pagination and filters (Admin)
+     */
+    findAllAuctions = async (query: {
+        page?: string;
+        page_size?: string;
+        search?: string;
+        status?: string;
+        category?: string;
+    }) => {
+        const page = Number(query.page || "1");
+        const take = Number(query.page_size || "10");
+        const skip = (page - 1) * take;
+
+        const where: any = {
+            lst_type: ListingType.AUCTION,
+        };
+
+        // Status filter (admin can see all statuses)
+        if (query.status) {
+            where.lst_status = query.status as ListingStatus;
+        }
+
+        if (query.search) {
+            where.OR = [
+                { lst_title: { contains: query.search } },
+                { lst_description: { contains: query.search } },
+            ];
+        }
+
+        if (query.category) {
+            where.lst_category_id = query.category;
+        }
+
+        const [auctions, count] = await queryHandler(() =>
+            prisma.$transaction([
+                prisma.listings.findMany({
+                    where,
+                    select: {
+                        ...listingSelect,
+                        _count: {
+                            select: {
+                                bids: true,
+                                engagements: true,
+                            },
+                        },
+                    },
+                    take,
+                    skip,
+                    orderBy: { lst_created_at: "desc" },
+                }),
+                prisma.listings.count({ where }),
+            ])
+        );
+
+        return { auctions, count, page, take };
+    };
+
+    /**
+     * Get auction details with all participants/bidders (Admin)
+     */
+    findAuctionWithParticipants = async (lst_id: string) => {
+        return queryHandler(async () => {
+            const auction = await prisma.listings.findUnique({
+                where: { lst_id },
+                select: {
+                    ...listingSelect,
+                    bids: {
+                        select: {
+                            bid_id: true,
+                            bid_amount: true,
+                            bid_created_at: true,
+                            bidder: {
+                                select: {
+                                    user_id: true,
+                                    user_full_name: true,
+                                    user_email: true,
+                                    user_primary_phone: true,
+                                    user_profile_image_file_id: true,
+                                },
+                            },
+                        },
+                        orderBy: { bid_amount: "desc" },
+                    },
+                    engagements: {
+                        select: {
+                            eng_id: true,
+                            eng_status: true,
+                            eng_created_at: true,
+                            eng_closed_at: true,
+                            user: {
+                                select: {
+                                    user_id: true,
+                                    user_full_name: true,
+                                    user_email: true,
+                                    user_primary_phone: true,
+                                    user_profile_image_file_id: true,
+                                },
+                            },
+                        },
+                        orderBy: { eng_created_at: "desc" },
+                    },
+                },
+            });
+
+            return auction;
+        });
+    };
 }
 
 export default ListingRepository;
