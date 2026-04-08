@@ -76,10 +76,17 @@ class ListingService {
      * Helper to fetch listing images by listing_id from file-service
      */
     private populateListingImages = async (listings: any[]) => {
+        if (!listings || listings.length === 0) return;
+        
         await Promise.all(
             listings.map(async (listing: any) => {
                 try {
                     const listingId = listing.lst_id;
+                    if (!listingId) {
+                        listing.user_portfolio = [];
+                        return;
+                    }
+                    
                     const files = await getFilesByListingId(listingId);
                     
                     listing.user_portfolio = Array.isArray(files)
@@ -287,8 +294,15 @@ class ListingService {
         category?: string;
     }) => {
         const result = await this.listingRepository.findAllAuctions(query);
-        await this.populateSignedUrls(result.auctions as any[]);
-        await this.populateListingImages(result.auctions as any[]);
+        
+        // Ensure auctions array exists
+        const auctions = result.auctions || [];
+        
+        if (auctions.length > 0) {
+            await this.populateSignedUrls(auctions as any[]);
+            await this.populateListingImages(auctions as any[]);
+        }
+        
         return result;
     };
 
