@@ -405,6 +405,68 @@ class ListingRepository {
             return auction;
         });
     };
+
+    /**
+     * Find all BUY_NOW listings with pagination and filters (Admin)
+     */
+    findAllBuyNow = async (query: {
+        page?: string;
+        page_size?: string;
+        search?: string;
+        status?: string;
+        category?: string;
+    }) => {
+        const page = Number(query.page || "1");
+        const take = Number(query.page_size || "10");
+        const skip = (page - 1) * take;
+
+        const where: any = {
+            lst_type: ListingType.BUY_NOW,
+        };
+
+        if (query.status) {
+            where.lst_status = query.status as ListingStatus;
+        }
+
+        if (query.search) {
+            where.OR = [
+                { lst_title: { contains: query.search } },
+                { lst_description: { contains: query.search } },
+            ];
+        }
+
+        if (query.category) {
+            where.lst_category_id = query.category;
+        }
+
+        const [buy_now_listings, count] = await queryHandler(() =>
+            prisma.$transaction([
+                prisma.listings.findMany({
+                    where,
+                    select: listingSelect,
+                    take,
+                    skip,
+                    orderBy: { lst_created_at: "desc" },
+                }),
+                prisma.listings.count({ where }),
+            ])
+        );
+
+        return { buy_now_listings, count, page, take };
+    };
+
+    /**
+     * Get BUY_NOW listing details by ID (Admin)
+     */
+    findBuyNowById = async (lst_id: string) => {
+        return queryHandler(async () => {
+            const listing = await prisma.listings.findUnique({
+                where: { lst_id },
+                select: listingSelect,
+            });
+            return listing;
+        });
+    };
 }
 
 export default ListingRepository;

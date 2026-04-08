@@ -140,6 +140,30 @@ class MarketplaceAdminController {
     });
 
     /**
+     * Get all buy now listings with pagination and filters
+     * GET /admin/buy-now?page=1&page_size=10&status=ACTIVE&search=&category=
+     */
+    getAllBuyNow = asyncHandler(async (req: Request, res: Response) => {
+        const query = req.query as any;
+        const result = await this.listingService.getAllBuyNow(query);
+        return res
+            .status(StatusCodes.OK)
+            .json(new ApiResponse(StatusCodes.OK, result, "Buy now listings fetched successfully"));
+    });
+
+    /**
+     * Get buy now listing details
+     * GET /admin/buy-now/:id
+     */
+    getBuyNowDetails = asyncHandler(async (req: Request, res: Response) => {
+        const lst_id = String(req.params.id);
+        const result = await this.listingService.getBuyNowById(lst_id);
+        return res
+            .status(StatusCodes.OK)
+            .json(new ApiResponse(StatusCodes.OK, result, "Buy now listing details fetched successfully"));
+    });
+
+    /**
      * Update auction details (admin can modify any field)
      * PATCH /admin/auctions/:id
      */

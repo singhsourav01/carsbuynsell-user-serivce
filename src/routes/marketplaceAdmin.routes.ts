@@ -38,6 +38,12 @@ MarketplaceAdminRoutes.get("/admin/auctions", authAdmin(), adminController.getAl
 MarketplaceAdminRoutes.get("/admin/auctions/:id", authAdmin(), adminController.getAuctionDetails);
 MarketplaceAdminRoutes.patch("/admin/auctions/:id", authAdmin(), adminController.updateAuction);
 
+// ─── Buy Now Management ───────────────────────────────────────────────────────
+// GET /admin/buy-now      - Get all buy now listings (paginated)
+// GET /admin/buy-now/:id  - Get buy now listing details
+MarketplaceAdminRoutes.get("/admin/buy-now", authAdmin(), adminController.getAllBuyNow);
+MarketplaceAdminRoutes.get("/admin/buy-now/:id", authAdmin(), adminController.getBuyNowDetails);
+
 // ─── Order Management ─────────────────────────────────────────────────────────
 // GET /admin/orders - Get all orders
 MarketplaceAdminRoutes.get("/admin/orders", authAdmin(), adminController.getAllOrders);

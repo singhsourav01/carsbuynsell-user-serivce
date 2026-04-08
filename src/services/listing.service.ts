@@ -358,6 +358,58 @@ class ListingService {
             total_bids: auction.bids.length,
         };
     };
+
+    /**
+     * Get all BUY_NOW listings with pagination (Admin)
+     */
+    getAllBuyNow = async (query: {
+        page?: string;
+        page_size?: string;
+        search?: string;
+        status?: string;
+        category?: string;
+    }) => {
+        const result = await this.listingRepository.findAllBuyNow(query);
+        const listings = result.buy_now_listings || [];
+
+        if (listings.length > 0) {
+            await this.populateSignedUrls(listings as any[]);
+            await this.populateListingImages(listings as any[]);
+        }
+
+        return result;
+    };
+
+    /**
+     * Get BUY_NOW listing details by ID (Admin)
+     */
+    getBuyNowById = async (lst_id: string) => {
+        const listing = await this.listingRepository.findBuyNowById(lst_id);
+        if (!listing)
+            throw new ApiError(StatusCodes.NOT_FOUND, LISTING_ERRORS.LISTING_NOT_FOUND);
+        if (listing.lst_type !== "BUY_NOW")
+            throw new ApiError(StatusCodes.BAD_REQUEST, LISTING_ERRORS.LISTING_NOT_BUY_NOW);
+
+        await this.populateSignedUrls([listing as any]);
+
+        let userPortfolio: any[] = [];
+        try {
+            const files = await getFilesByListingId(lst_id);
+            if (Array.isArray(files)) {
+                userPortfolio = files.map((file: any) => ({
+                    file_id: file.file_id,
+                    file_signed_url: file.file_signed_url
+                }));
+            }
+        } catch {
+            // No listing images found
+        }
+
+        return {
+            ...listing,
+            user_portfolio: userPortfolio,
+        };
+    };
 }
 
 export default ListingService;
