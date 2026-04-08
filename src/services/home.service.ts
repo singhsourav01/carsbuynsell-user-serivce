@@ -3,7 +3,7 @@ import { StatusCodes } from "http-status-codes";
 import { API_ERRORS } from "../constants/app.constant";
 import HomeRepository from "../repositories/home.repository";
 import { CreateCategoryDTO, HomeQueryDTO, ListingsQueryDTO } from "../types/home.types";
-import { getUserById, getFilesByIds } from "../api/user.api";
+import { getFilesByListingId, getFilesByIds } from "../api/user.api";
 
 class HomeService {
     private homeRepository: HomeRepository;
@@ -93,24 +93,24 @@ class HomeService {
     };
 
     /**
-     * Helper to enrich listings with signed URLs and user portfolio
+     * Helper to enrich listings with signed URLs and listing images from file-service
      */
     private enrichListings = async (listings: any[]) => {
         if (!Array.isArray(listings) || listings.length === 0) {
             return listings;
         }
 
-        // Populate signed URLs for listing images and seller profile
+        // Populate signed URLs for listing images (from listing_images table) and seller profile
         await this.populateSignedUrls(listings);
 
-        // Enrich listings with user portfolio images
+        // Fetch listing images from file-service using listing_id
         const enrichedListings = await Promise.all(
             listings.map(async (listing: any) => {
                 try {
-                    const portfolioFiles = await getUserById(listing.lst_seller_id);
+                    const files = await getFilesByListingId(listing.lst_id);
 
-                    const userPortfolio = Array.isArray(portfolioFiles)
-                        ? portfolioFiles.map((file: any) => ({
+                    const userPortfolio = Array.isArray(files)
+                        ? files.map((file: any) => ({
                             file_id: file.file_id,
                             file_signed_url: file.file_signed_url
                         }))
@@ -120,8 +120,7 @@ class HomeService {
                         ...listing,
                         user_portfolio: userPortfolio
                     };
-                } catch (error) {
-                    console.error("Portfolio fetch failed for seller:", listing.lst_seller_id);
+                } catch {
                     return {
                         ...listing,
                         user_portfolio: []

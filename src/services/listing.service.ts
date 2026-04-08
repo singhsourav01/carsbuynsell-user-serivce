@@ -6,7 +6,7 @@ import { CreateListingDTO, ListingQueryDTO, UpdateListingDTO, VehicleDetailsDTO 
 import { INTEGERS } from "../constants/app.constant";
 import userPortfolioService from "../repositories/userPortfolio.repository";
 import UserPortfolioService from "./userPortfolio.service";
-import { getFilesByIds, getUserById } from "../api/user.api";
+import { getFilesByIds, getFilesByListingId } from "../api/user.api";
 
 class ListingService {
     private listingRepository: ListingRepository;
@@ -72,6 +72,29 @@ class ListingService {
         }
     };
 
+    /**
+     * Helper to fetch listing images by listing_id from file-service
+     */
+    private populateListingImages = async (listings: any[]) => {
+        await Promise.all(
+            listings.map(async (listing: any) => {
+                try {
+                    const listingId = listing.lst_id;
+                    const files = await getFilesByListingId(listingId);
+                    
+                    listing.user_portfolio = Array.isArray(files)
+                        ? files.map((file: any) => ({
+                            file_id: file.file_id,
+                            file_signed_url: file.file_signed_url
+                        }))
+                        : [];
+                } catch {
+                    listing.user_portfolio = [];
+                }
+            })
+        );
+    };
+
     getAll = async (query: ListingQueryDTO) => {
         const result: any = await this.listingRepository.findAll(query);
 
@@ -82,45 +105,22 @@ class ListingService {
             return result;
         }
 
-        // Populate signed URLs for listing images and seller profile
+        // Populate signed URLs for listing images (from listing_images table) and seller profile
         await this.populateSignedUrls(listings);
 
-        // Enrich listings with user portfolio images
-        const enrichedListings = await Promise.all(
-            listings.map(async (listing: any) => {
-                try {
-                    const portfolioFiles = await getUserById(listing.lst_seller_id);
-
-                    const userPortfolio = Array.isArray(portfolioFiles)
-                        ? portfolioFiles.map((file: any) => ({
-                            file_id: file.file_id,
-                            file_signed_url: file.file_signed_url
-                        }))
-                        : [];
-
-                    return {
-                        ...listing,
-                        user_portfolio: userPortfolio
-                    };
-                } catch {
-                    return {
-                        ...listing,
-                        user_portfolio: []
-                    };
-                }
-            })
-        );
+        // Fetch listing images from file-service using listing_id
+        await this.populateListingImages(listings);
 
         // Return with the correct property name
         if (result.data) {
             return {
                 ...result,
-                data: enrichedListings
+                data: listings
             };
         }
         return {
             ...result,
-            listings: enrichedListings
+            listings
         };
     };
 
@@ -131,18 +131,18 @@ class ListingService {
 
         await this.populateSignedUrls([listing]);
 
-        // Fetch user portfolio images
+        // Fetch listing images from file-service using listing_id
         let userPortfolio: any[] = [];
         try {
-            const portfolioFiles = await getUserById((listing as any).lst_seller_id);
-            if (Array.isArray(portfolioFiles)) {
-                userPortfolio = portfolioFiles.map((file: any) => ({
+            const files = await getFilesByListingId(lst_id);
+            if (Array.isArray(files)) {
+                userPortfolio = files.map((file: any) => ({
                     file_id: file.file_id,
                     file_signed_url: file.file_signed_url
                 }));
             }
         } catch {
-            // Seller has no portfolio files - this is expected
+            // No listing images found - this is expected for new listings
         }
 
         // Increment view count (fire-and-forget)
@@ -288,6 +288,7 @@ class ListingService {
     }) => {
         const result = await this.listingRepository.findAllAuctions(query);
         await this.populateSignedUrls(result.auctions as any[]);
+        await this.populateListingImages(result.auctions as any[]);
         return result;
     };
 
@@ -302,6 +303,20 @@ class ListingService {
             throw new ApiError(StatusCodes.BAD_REQUEST, LISTING_ERRORS.LISTING_NOT_AUCTION);
 
         await this.populateSignedUrls([auction as any]);
+
+        // Fetch listing images from file-service
+        let userPortfolio: any[] = [];
+        try {
+            const files = await getFilesByListingId(lst_id);
+            if (Array.isArray(files)) {
+                userPortfolio = files.map((file: any) => ({
+                    file_id: file.file_id,
+                    file_signed_url: file.file_signed_url
+                }));
+            }
+        } catch {
+            // No listing images found
+        }
 
         // Get unique participants from engagements with their highest bid
         const participants = auction.engagements.map((eng: any) => {
@@ -323,6 +338,7 @@ class ListingService {
 
         return {
             ...auction,
+            user_portfolio: userPortfolio,
             participants,
             total_participants: auction.engagements.length,
             total_bids: auction.bids.length,

@@ -94,6 +94,27 @@ export const getUserById = async (userId: string, token?: string) => {
   }
 };
 
+// Get files by listing ID (returns signed URLs for all images of a listing)
+export const getFilesByListingId = async (listingId: string, token?: string) => {
+  if (!listingId) return [];
+  
+  try {
+    const { data } = await axios.get(
+      `${FILE_SERVICE_URL}/get-by-listing-id?listing_id=${listingId}`,
+      {
+        headers: {
+          "Content-Type": "application/json",
+          ...(token && { Authorization: token }),
+        },
+      }
+    );
+    return data?.data || [];
+  } catch {
+    // Return empty array - no files found is a valid case
+    return [];
+  }
+};
+
 // Delete multiple files by IDs
 export const deleteFilesByIds = async (fileIds: string[], token?: string) => {
   try {
