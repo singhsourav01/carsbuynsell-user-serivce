@@ -4,6 +4,8 @@ import { BID_ERRORS } from "../constants/bid.constant";
 import { LISTING_ERRORS } from "../constants/listing.constant";
 import BidRepository from "../repositories/bid.repository";
 import ListingRepository from "../repositories/listing.repository";
+import prisma from "../configs/prisma.config";
+import { notifyBidOutbid } from "../api/notification.api";
 
 class BidService {
     private bidRepository: BidRepository;
@@ -18,7 +20,35 @@ class BidService {
         // Note: Subscription validation moved inside repository transaction
         // This allows users with existing engagements to bid even if votes are exhausted
         try {
-            return await this.bidRepository.placeBid(listing_id, bidder_id, bid_amount);
+            // Find the previous highest bidder before placing the new bid
+            const previousHighestBid = await prisma.bids.findFirst({
+                where: { bid_listing_id: listing_id },
+                orderBy: { bid_amount: "desc" },
+                select: { bid_bidder_id: true, bidder: { select: { user_full_name: true } } },
+            });
+
+            const bid = await this.bidRepository.placeBid(listing_id, bidder_id, bid_amount);
+
+            // Fire-and-forget: Notify the previous highest bidder they've been outbid
+            if (previousHighestBid && previousHighestBid.bid_bidder_id !== bidder_id) {
+                const listing = await prisma.listings.findUnique({
+                    where: { lst_id: listing_id },
+                    select: { lst_title: true },
+                });
+                const bidderInfo = await prisma.users.findUnique({
+                    where: { user_id: bidder_id },
+                    select: { user_full_name: true },
+                });
+                notifyBidOutbid(
+                    listing_id,
+                    listing?.lst_title || "Unknown Listing",
+                    previousHighestBid.bid_bidder_id,
+                    bid_amount,
+                    bidderInfo?.user_full_name || "Someone"
+                ).catch(() => {});
+            }
+
+            return bid;
         } catch (err: any) {
             const msg = err?.message || "";
             if (msg === "LISTING_NOT_FOUND")

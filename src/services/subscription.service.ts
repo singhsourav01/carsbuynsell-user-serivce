@@ -7,6 +7,7 @@ import {
     SUBSCRIPTION_PRICE,
 } from "../constants/subscription.constant";
 import SubscriptionRepository from "../repositories/subscription.repository";
+import { notifySubscriptionSuccess } from "../api/notification.api";
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const Razorpay = require("razorpay");
@@ -91,10 +92,22 @@ class SubscriptionService {
             throw new ApiError(StatusCodes.NOT_FOUND, SUBSCRIPTION_ERRORS.PENDING_SUB_NOT_FOUND);
 
         // Activate subscription
-        return this.subscriptionRepository.activateSubscription(
+        const activated = await this.subscriptionRepository.activateSubscription(
             razorpay_order_id,
             razorpay_payment_id
         );
+
+        // Fire-and-forget: Send subscription success notification
+        if (activated) {
+            const plan = await this.subscriptionRepository.findPlanById(pending.sub_plan_id);
+            notifySubscriptionSuccess(
+                pending.sub_user_id,
+                plan?.sp_name || "Premium",
+                pending.sub_expires_at.toISOString().split("T")[0]
+            ).catch(() => {});
+        }
+
+        return activated;
     };
 
     getMySubscription = async (user_id: string) => {

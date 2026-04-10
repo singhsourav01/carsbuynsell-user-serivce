@@ -7,6 +7,7 @@ import { INTEGERS } from "../constants/app.constant";
 import userPortfolioService from "../repositories/userPortfolio.repository";
 import UserPortfolioService from "./userPortfolio.service";
 import { getFilesByIds, getFilesByListingId } from "../api/user.api";
+import { notifyNewListing } from "../api/notification.api";
 
 class ListingService {
     private listingRepository: ListingRepository;
@@ -195,6 +196,9 @@ class ListingService {
                 kilometers: dto.vehicle_details.kilometers,
             });
         }
+
+        // Fire-and-forget: Notify all users about new listing
+        notifyNewListing(listing.lst_id, dto.lst_title, dto.lst_type).catch(() => {});
 
         return listing;
     };

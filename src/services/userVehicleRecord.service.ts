@@ -7,6 +7,7 @@ import {
     UpdateUserVehicleRecordDTO,
     UserVehicleRecordQueryDTO,
 } from "../types/userVehicleRecord.types";
+import { notifyVehicleSubmitted } from "../api/notification.api";
 
 class UserVehicleRecordService {
     private vehicleRecordRepository: UserVehicleRecordRepository;
@@ -35,7 +36,12 @@ class UserVehicleRecordService {
             uvr_base_price: dto.uvr_base_price,
         };
 
-        return this.vehicleRecordRepository.create(data);
+        const record = await this.vehicleRecordRepository.create(data);
+
+        // Fire-and-forget: Notify user about vehicle submission
+        notifyVehicleSubmitted(user_id, dto.uvr_title).catch(() => {});
+
+        return record;
     };
 
     update = async (uvr_id: string, user_id: string, dto: UpdateUserVehicleRecordDTO) => {
