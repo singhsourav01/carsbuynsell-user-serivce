@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const NOTIFICATION_SERVICE_URL =
-  process.env.NOTIFICATION_SERVICE_URL || "http://localhost:3004/notification";
+  process.env.NOTIFICATION_SERVICE_URL || "http://13.127.188.130:3004/notification";
 
 /**
  * Flow 1: Notify all users about a new listing
