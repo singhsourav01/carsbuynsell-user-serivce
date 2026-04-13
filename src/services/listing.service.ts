@@ -198,7 +198,7 @@ class ListingService {
         }
 
         // Fire-and-forget: Notify all users about new listing
-        const notifiy=  notifyNewListing(listing.lst_id, dto.lst_title, dto.lst_type).catch(() => {});
+        const notifiy= await notifyNewListing(listing.lst_id, dto.lst_title, dto.lst_type).catch(() => {});
         console.log("Notification sent:", notifiy);
 
         return listing;
