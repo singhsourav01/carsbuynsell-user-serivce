@@ -12,7 +12,7 @@ export const notifyNewListing = async (
   listing_type: string
 ) => {
   try {
-    await axios.post(`${NOTIFICATION_SERVICE_URL}/internal/new-listing`, {
+    await axios.post(`${NOTIFICATION_SERVICE_URL}/new-listing`, {
       listing_id,
       listing_title,
       listing_type,
@@ -33,7 +33,7 @@ export const notifyBidOutbid = async (
   new_bidder_name: string
 ) => {
   try {
-    await axios.post(`${NOTIFICATION_SERVICE_URL}/internal/bid-outbid`, {
+    await axios.post(`${NOTIFICATION_SERVICE_URL}/bid-outbid`, {
       listing_id,
       listing_title,
       outbid_user_id,
@@ -54,7 +54,7 @@ export const notifySubscriptionSuccess = async (
   expires_at: string
 ) => {
   try {
-    await axios.post(`${NOTIFICATION_SERVICE_URL}/internal/subscription-success`, {
+    await axios.post(`${NOTIFICATION_SERVICE_URL}/subscription-success`, {
       user_id,
       plan_name,
       expires_at,
@@ -72,7 +72,7 @@ export const notifyVehicleSubmitted = async (
   vehicle_title: string
 ) => {
   try {
-    await axios.post(`${NOTIFICATION_SERVICE_URL}/internal/vehicle-submitted`, {
+    await axios.post(`${NOTIFICATION_SERVICE_URL}/vehicle-submitted`, {
       user_id,
       vehicle_title,
     });
