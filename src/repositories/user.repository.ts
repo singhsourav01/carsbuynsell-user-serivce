@@ -263,6 +263,7 @@ class UserRepository {
   };
 
   createUserDevice = async (data: createUserDeviceType) => {
+    console.log(data, "data in createUserDevice");
     return queryHandler(async () =>
       prisma.user_login_devices.upsert({
         where: {
