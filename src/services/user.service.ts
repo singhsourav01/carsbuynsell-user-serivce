@@ -378,6 +378,10 @@ class UserService {
     //   (await getFileById(user.user_profile_image_file_id))?.file_url;
     return userData;
   };
+
+  createDevice = async (data: createUserDeviceType) => {
+    return await this.userRepository.createUserDevice(data);
+  }
 }
 
 export default UserService;

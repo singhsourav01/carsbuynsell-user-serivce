@@ -656,6 +656,19 @@ class UserController {
     );
   });
 
+  createDevice = asyncHandler(async (req: Request, res: Response) => {
+    const device = await this.userService.createDevice(req.body);
+    return res
+      .status(StatusCodes.CREATED)
+      .json(
+        new ApiResponse(
+          StatusCodes.CREATED,
+          device,
+          API_RESPONSES.USER_DEVICE_CREATED
+        )
+      );
+  }); 
+
 }
 
 export default UserController;
