@@ -210,11 +210,11 @@ model user_old_phones {
 model user_login_devices {
   uld_id            String      @id @default(uuid()) @map("_id")
   uld_user_id       String
-  uld_fcm_token     String    @unique
+  uld_fcm_token     String @db.Text  
   uld_device_name   String
   uld_device_type   DeviceTypes
-  uld_access_token  String
-  uld_refresh_token String
+  uld_access_token  String @db.Text
+  uld_refresh_token String @db.Text
   uld_created_at    DateTime    @default(now())
   uld_updated_at    DateTime    @updatedAt
   user              users       @relation(fields: [uld_user_id], references: [user_id], onDelete: Cascade)
