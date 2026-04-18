@@ -266,13 +266,16 @@ class UserRepository {
     return queryHandler(async () =>
       prisma.user_login_devices.upsert({
         where: {
-          uld_fcm_token: data.uld_fcm_token,
+          uld_user_id_uld_device_name: {
+            uld_user_id: data.uld_user_id!,
+            uld_device_name: data.uld_device_name,
+          },
         },
         update: {
           uld_access_token: data.uld_access_token,
           uld_refresh_token: data.uld_refresh_token,
-          uld_device_name: data.uld_device_name,
           uld_device_type: data.uld_device_type,
+          uld_fcm_token: data.uld_fcm_token,
           uld_updated_at: new Date(),
         },
         create: data,
