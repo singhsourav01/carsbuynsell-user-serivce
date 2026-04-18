@@ -263,8 +263,20 @@ class UserRepository {
   };
 
   createUserDevice = async (data: createUserDeviceType) => {
-    return queryHandler(
-      async () => await prisma.user_login_devices.create({ data })
+    return queryHandler(async () =>
+      prisma.user_login_devices.upsert({
+        where: {
+          uld_fcm_token: data.uld_fcm_token,
+        },
+        update: {
+          uld_access_token: data.uld_access_token,
+          uld_refresh_token: data.uld_refresh_token,
+          uld_device_name: data.uld_device_name,
+          uld_device_type: data.uld_device_type,
+          uld_updated_at: new Date(),
+        },
+        create: data,
+      })
     );
   };
 

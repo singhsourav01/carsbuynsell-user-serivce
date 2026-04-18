@@ -210,7 +210,7 @@ model user_old_phones {
 model user_login_devices {
   uld_id            String      @id @default(uuid()) @map("_id")
   uld_user_id       String
-  uld_fcm_token     String
+  uld_fcm_token     String    @unique
   uld_device_name   String
   uld_device_type   DeviceTypes
   uld_access_token  String
