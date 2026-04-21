@@ -27,6 +27,19 @@ class HomeController {
             .json(new ApiResponse(StatusCodes.OK, data, "Home page data fetched successfully"));
     });
 
+    getRecentListings = asyncHandler(async (req: Request, res: Response) => {
+        const query = req.query as ListingsQueryDTO;
+
+        const data = await this.homeService.getRecentListings(query);
+
+        return res.status(StatusCodes.OK).json(
+            new ApiResponse(
+                StatusCodes.OK,
+                data,
+                "Recent listings fetched successfully"
+            )
+        );
+    });
     // ─── Paginated Listing Feed ───────────────────────────────────────────────────
 
     /**

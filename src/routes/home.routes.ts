@@ -11,6 +11,8 @@ const homeController = new HomeController();
 // GET /home        — Home page widget (featured + first-page listings + categories)
 HomeRoutes.get(API_ENDPOINTS.HOME, homeController.getHome);
 
+HomeRoutes.get(API_ENDPOINTS.RECENT_LISTINGS, homeController.getRecentListings);
+
 // GET /listings    — Paginated listing feed
 //   Query params:
 //     category  = slug ("used-cars") or UUID  — omit for ALL vehicles

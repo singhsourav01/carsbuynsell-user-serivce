@@ -88,6 +88,7 @@ export const API_ENDPOINTS = {
 
   // Home & Category Endpoints
   HOME: "/home",
+  RECENT_LISTINGS: "/home/recent",
   LISTINGS: "/listings",          // paginated all-listings with optional category/type filter
   CATEGORY: "/category",
   CATEGORIES: "/categories",
