@@ -69,9 +69,9 @@ class HomeService {
      * for the home/landing page widget.
      */
     getHomePage = async (query: HomeQueryDTO) => {
-        const [featured, recent, categories] = await Promise.all([
+        const [featured,  categories] = await Promise.all([
             this.homeRepository.getFeaturedListings(),
-            this.homeRepository.getActiveListings({ category: query.category, type: query.type }),
+            // this.homeRepository.getActiveListings({ category: query.category, type: query.type }),
             this.homeRepository.getCategories(),
         ]);
 
@@ -79,15 +79,15 @@ class HomeService {
         const enrichedFeatured = await this.enrichListings(featured || []);
 
         // Enrich recent listings
-        const recentListings = recent?.data || [];
-        const enrichedRecent = await this.enrichListings(recentListings);
+        // const recentListings = recent?.data || [];
+        // const enrichedRecent = await this.enrichListings(recentListings);
 
         return {
             featured: enrichedFeatured,
-            recent: {
-                ...recent,
-                data: enrichedRecent
-            },
+            // recent: {
+            //     ...recent,
+            //     data: enrichedRecent
+            // },
             categories
         };
     };
