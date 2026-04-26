@@ -28,7 +28,7 @@ export const userVehicleRecordSelect = {
             user_id: true,
             user_full_name: true,
             user_profile_image_file_id: true,
-            user_phone: true,
+            user_primary_phone: true,
             user_email: true,
         },
     },
