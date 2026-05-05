@@ -3,7 +3,7 @@ import FormData from "form-data";
 import fs from "fs";
 import { handleAxiosError } from "../utils/helper";
 
-const FILE_SERVICE_URL = process.env.FILE_SERVICE_URL || "http://13.235.103.86:3003/file";
+const FILE_SERVICE_URL = process.env.FILE_SERVICE_URL || "http://65.2.10.30:3003/file";
 
 // Upload files to S3 via file-service
 export const uploadFiles = async (
