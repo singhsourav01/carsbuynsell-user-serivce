@@ -222,7 +222,8 @@ model user_login_devices {
 model password_reset_otp {
   pro_id         String   @id @default(uuid()) @map("_id")
   pro_user_id    String
-  pro_otp        String
+  pro_otp        String?
+  pro_verification_id String?
   pro_identifier String   // email or phone used for reset
   pro_type       String   // "email" or "phone"
   pro_is_used    Boolean  @default(false)

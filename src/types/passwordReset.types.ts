@@ -16,10 +16,11 @@ export type ResetPasswordRequestType = {
 
 export type CreatePasswordResetOtpType = {
   pro_user_id: string;
-  pro_otp: string;
+  pro_otp?: string | null;
   pro_identifier: string;
   pro_type: "email" | "phone";
   pro_expires_at: Date;
+  pro_verification_id: string | null;
 };
 
 export type CreateResetTokenType = {

@@ -9,6 +9,7 @@ import {
   ResetPasswordRequestType,
 } from "../types/passwordReset.types";
 import { generateOtp, hashPassword } from "../utils/helper";
+import MessageCentralProvider from "../utils/messageCentral.provider";
 
 const OTP_EXPIRY_MINUTES = 10;
 const RESET_TOKEN_EXPIRY_MINUTES = 15;
@@ -16,76 +17,115 @@ const RESET_TOKEN_EXPIRY_MINUTES = 15;
 class PasswordResetService {
   private passwordResetRepository: PasswordResetRepository;
   private userRepository: UserRepository;
+  private messageCentralProvider: MessageCentralProvider;
 
   constructor() {
     this.passwordResetRepository = new PasswordResetRepository();
     this.userRepository = new UserRepository();
+        this.messageCentralProvider = new MessageCentralProvider();
+
   }
 
   /**
    * Step 1: Request password reset - sends OTP to either email OR phone
    */
-  forgotPassword = async (data: ForgotPasswordRequestType) => {
-    const { email, phone } = data;
+forgotPassword = async (data: ForgotPasswordRequestType) => {
+  const { email, phone } = data;
 
-    if (!email && !phone) {
+  if (!email && !phone) {
+    throw new ApiError(
+      StatusCodes.BAD_REQUEST,
+      "Either email or phone number is required"
+    );
+  }
+
+  let user;
+  let identifier: string;
+  let otpType: "email" | "phone";
+
+  if (email) {
+    user = await this.userRepository.getUserByEmail(email);
+
+    if (!user) {
       throw new ApiError(
-        StatusCodes.BAD_REQUEST,
-        "Either email or phone number is required"
+        StatusCodes.NOT_FOUND,
+        API_ERRORS.NO_ACCOUNT_FOUND
       );
     }
 
-    let user;
-    let identifier: string;
-    let otpType: "email" | "phone";
+    identifier = email;
+    otpType = "email";
+  } else {
+    user = await this.userRepository.getUserByPhone(phone!);
 
-    if (email) {
-      user = await this.userRepository.getUserByEmail(email);
-      if (!user) {
-        throw new ApiError(StatusCodes.NOT_FOUND, API_ERRORS.NO_ACCOUNT_FOUND);
-      }
-      identifier = email;
-      otpType = "email";
-    } else {
-      user = await this.userRepository.getUserByPhone(phone!);
-      if (!user) {
-        throw new ApiError(
-          StatusCodes.NOT_FOUND,
-          API_ERRORS.PHONE_NUMBER_DOSE_NOT_EXISTS
-        );
-      }
-      identifier = phone!;
-      otpType = "phone";
+    if (!user) {
+      throw new ApiError(
+        StatusCodes.NOT_FOUND,
+        API_ERRORS.PHONE_NUMBER_DOSE_NOT_EXISTS
+      );
     }
 
-    const userId = user.user_id;
+    identifier = phone!;
+    otpType = "phone";
+  }
 
-    // Delete any existing OTPs for this user
-    await this.passwordResetRepository.deleteByUserIdAndType(userId, otpType);
+  const userId = user.user_id;
 
-    // Generate OTP
+  await this.passwordResetRepository.deleteByUserIdAndType(
+    userId,
+    otpType
+  );
+
+  const expiresAt = new Date(
+    Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000
+  );
+
+  if (otpType === "email") {
     const otp = generateOtp();
-    const expiresAt = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000);
 
-    // Store OTP
     await this.passwordResetRepository.create({
       pro_user_id: userId,
       pro_otp: otp,
       pro_identifier: identifier,
-      pro_type: otpType,
+      pro_type: "email",
+      pro_verification_id: null,
       pro_expires_at: expiresAt,
     });
 
-    // TODO: Implement actual SMS/Email sending
-    // In production, send OTP via SMS or Email service
     console.log(`[DEV] Password reset OTP for ${identifier}: ${otp}`);
 
     return {
-      message: `OTP sent to your ${otpType}. Valid for ${OTP_EXPIRY_MINUTES} minutes.`,
-      // Remove this in production - only for testing
+      message: `OTP sent to your email. Valid for ${OTP_EXPIRY_MINUTES} minutes.`,
       ...(process.env.NODE_ENV === "development" && { otp }),
     };
+  }
+
+  const smsResponse =
+    await this.messageCentralProvider.sendOTP(identifier);
+
+  const verificationId =
+    smsResponse?.data?.verificationId;
+
+  if (!verificationId) {
+    throw new ApiError(
+      StatusCodes.BAD_GATEWAY,
+      "Failed to send OTP. Verification ID missing"
+    );
+  }
+
+  await this.passwordResetRepository.create({
+    pro_user_id: userId,
+    pro_otp: null,
+    pro_identifier: identifier,
+    pro_type: "phone",
+    pro_verification_id: verificationId,
+    pro_expires_at: expiresAt,
+  });
+
+  return {
+    message: `OTP sent to your phone. Valid for ${OTP_EXPIRY_MINUTES} minutes.`,
   };
+};
 
   /**
    * Step 2: Verify OTP - returns a reset token if valid
