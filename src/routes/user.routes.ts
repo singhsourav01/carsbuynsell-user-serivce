@@ -26,15 +26,6 @@ UserRoutes.route(API_ENDPOINTS.USER_DETAILS).get(
 
 UserRoutes.route(API_ENDPOINTS.VERIFY_USER).post(userController.verifyUser);
 
-UserRoutes.route(API_ENDPOINTS.UPDATE_PHONE).put(
-  authUser(),
-  userController.updatePhone
-);
-UserRoutes.route(API_ENDPOINTS.UPDATE_EMAIL).put(
-  authUser(),
-  userController.updateEmail
-);
-
 UserRoutes.route(API_ENDPOINTS.GET_PHONE).get(
   // authUser(),
   userController.getByPhone

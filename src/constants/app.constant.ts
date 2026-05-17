@@ -97,6 +97,14 @@ export const API_ENDPOINTS = {
 
   // Dashboard
   DASHBOARD: "/admin/dashboard",
+
+  // For Email
+  SEND_EMAIL: "/send-email",
+  VERFIY_EMAIL : "/verify-email",
+
+  // For SMS
+  SEND_SMS: "/send-sms",
+  VERFIY_SMS : "/verify-sms",
 };
 
 export const API_RESPONSES = {

@@ -13,7 +13,6 @@ import {
 
 // Existing routes
 import AdminRoutes from "./routes/admin.routes";
-import OtpRoutes from "./routes/otp.routes";
 import UserRoutes from "./routes/user.routes";
 import InternalRoutes from "./routes/internal.routes";
 import PasswordResetRoutes from "./routes/passwordReset.routes";
@@ -26,6 +25,7 @@ import SubscriptionRoutes from "./routes/subscription.routes";
 import ProfileRoutes from "./routes/profile.routes";
 import MarketplaceAdminRoutes from "./routes/marketplaceAdmin.routes";
 import UserVehicleRecordRoutes from "./routes/userVehicleRecord.routes";
+import EmailSmsRoutes from "./routes/email_sms.routes";
 
 import { registerWithEureka } from "./utils/eureka.helper";
 
@@ -58,7 +58,6 @@ app.use(API_ENDPOINTS.BASE, express.static("public"));
 // ─── Existing Routes ──────────────────────────────────────────────────────────
 app.use(API_ENDPOINTS.BASE, UserRoutes);
 app.use(API_ENDPOINTS.BASE, AdminRoutes);
-app.use(API_ENDPOINTS.BASE, OtpRoutes);
 app.use(API_ENDPOINTS.BASE, PasswordResetRoutes);
 app.use(API_ENDPOINTS.BASE + API_ENDPOINTS.INTERNAL, InternalRoutes);
 
@@ -70,7 +69,7 @@ app.use(API_ENDPOINTS.BASE, SubscriptionRoutes);
 app.use(API_ENDPOINTS.BASE, ProfileRoutes);
 app.use(API_ENDPOINTS.BASE, MarketplaceAdminRoutes);
 app.use(API_ENDPOINTS.BASE, UserVehicleRecordRoutes);
-
+app.use(API_ENDPOINTS.BASE, EmailSmsRoutes);
 // ─── Global Error Handler ─────────────────────────────────────────────────────
 app.use((err: ApiError, req: Request, res: Response, next: NextFunction) => {
   console.log(err);

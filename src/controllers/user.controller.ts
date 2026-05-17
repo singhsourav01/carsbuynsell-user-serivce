@@ -12,7 +12,6 @@ import {
   INTEGERS,
   STRINGS,
 } from "../constants/app.constant";
-import OtpService from "../services/otp.service";
 import UserService from "../services/user.service";
 import { API_RESPONSES } from "./../constants/app.constant";
 import UserPortfolioService from "../services/userPortfolio.service";
@@ -25,12 +24,10 @@ interface AuthenticatedRequest extends Request {
 class UserController {
   userService: UserService;
   userPortfolioService: UserPortfolioService;
-  otpService: OtpService;
 
   constructor() {
     this.userService = new UserService();
     this.userPortfolioService = new UserPortfolioService();
-    this.otpService = new OtpService();
   }
 
   create = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
@@ -353,56 +350,6 @@ class UserController {
         )
       );
   });
-
-  updatePhone = asyncHandler(
-    async (req: AuthenticatedRequest, res: Response) => {
-      const { phone, otp } = req.body;
-      const { user_id } = req.user;
-      const userExist = await this.userService.getUserByEmailOrPhone(phone);
-      if (userExist)
-        throw new ApiError(
-          StatusCodes.BAD_REQUEST,
-          API_ERRORS.USER_EXIST_WITH_PHONE
-        );
-      await this.userService.getShortUserById(user_id);
-      const smsOtp = await this.otpService.getPhoneOtp(phone, otp);
-      const user = await this.userService.updateUser(user_id, {
-        user_primary_phone: phone,
-      });
-      await this.otpService.updateSms(smsOtp.so_id, { so_is_expired: true });
-      return res
-        .status(StatusCodes.OK)
-        .json(
-          new ApiResponse(StatusCodes.OK, user, API_RESPONSES.PHONE_UPDATED)
-        );
-    }
-  );
-
-  updateEmail = asyncHandler(
-    async (req: AuthenticatedRequest, res: Response) => {
-      const { email, otp } = req.body;
-      const { user_id } = req.user;
-      const userExist = await this.userService.getUserByEmailOrPhone(email);
-      if (userExist)
-        throw new ApiError(
-          StatusCodes.BAD_REQUEST,
-          API_ERRORS.USER_EXIST_WITH_EMAIL
-        );
-      await this.userService.getShortUserById(user_id);
-      const emailOtp = await this.otpService.getEmailOtp(email, otp);
-      const user = await this.userService.updateUser(user_id, {
-        user_email: email,
-      });
-      await this.otpService.updateEmail(emailOtp.eo_id, {
-        eo_is_expired: true,
-      });
-      return res
-        .status(StatusCodes.OK)
-        .json(
-          new ApiResponse(StatusCodes.OK, user, API_RESPONSES.EMAIL_UPDATED)
-        );
-    }
-  );
 
   createUserDevice = asyncHandler(async (req: Request, res: Response) => {
     const device = await this.userService.createUserDevice(req.body);

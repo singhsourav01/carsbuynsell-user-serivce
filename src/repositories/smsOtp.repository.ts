@@ -19,20 +19,20 @@ class SmsOtpRepository {
     );
   };
 
-  getByPhone = async (phone: string) => {
-    return queryHandler(
-      async () =>
-        await prisma.sms_otp.findFirst({
-          where: {
-            so_receiver: phone,
-          },
-          orderBy: {
-            so_created_at: "desc",
-          },
-          take: INTEGERS.ONE,
-        })
-    );
-  };
+  // getByPhone = async (phone: string) => {
+  //   return queryHandler(
+  //     async () =>
+  //       await prisma.sms_otp.findFirst({
+  //         where: {
+  //           so_receiver: phone,
+  //         },
+  //         orderBy: {
+  //           so_created_at: "desc",
+  //         },
+  //         take: INTEGERS.ONE,
+  //       })
+  //   );
+  // };
 }
 
 export default SmsOtpRepository;
