@@ -148,51 +148,68 @@ forgotPassword = async (data: ForgotPasswordRequestType) => {
   /**
    * Step 3: Reset password using the reset token
    */
-  resetPassword = async (data: ResetPasswordRequestType) => {
-    const { reset_token, new_password } = data;
+resetPassword = async (data: ResetPasswordRequestType) => {
+  const { email, phone, new_password } = data;
 
-    if (!reset_token || !new_password) {
-      throw new ApiError(
-        StatusCodes.BAD_REQUEST,
-        "Reset token and new password are required"
-      );
-    }
+  if (!new_password) {
+    throw new ApiError(
+      StatusCodes.BAD_REQUEST,
+      "New password is required"
+    );
+  }
 
-    if (new_password.length < 6) {
-      throw new ApiError(
-        StatusCodes.BAD_REQUEST,
-        "Password must be at least 6 characters long"
-      );
-    }
+  if (!email && !phone) {
+    throw new ApiError(
+      StatusCodes.BAD_REQUEST,
+      "Email or phone number is required"
+    );
+  }
 
-    // Find valid reset token
-    const tokenRecord =
-      await this.passwordResetRepository.findValidResetToken(reset_token);
+  if (new_password.length < 6) {
+    throw new ApiError(
+      StatusCodes.BAD_REQUEST,
+      "Password must be at least 6 characters long"
+    );
+  }
 
-    if (!tokenRecord) {
-      throw new ApiError(
-        StatusCodes.BAD_REQUEST,
-        "Invalid or expired reset token. Please request a new password reset."
-      );
-    }
+  let user;
 
-    // Hash the new password
-    const hashedPassword = await hashPassword(new_password);
+  if (email) {
+    const normalizedEmail = email.trim().toLowerCase();
 
-    // Update user password
-    const user = await this.userRepository.update(tokenRecord.prt_user_id, {
+    user = await this.userRepository.getUserByEmail(
+      normalizedEmail
+    );
+  } else {
+    const normalizedPhone = phone!.replace(/\D/g, "");
+
+    user = await this.userRepository.getUserByPhone(
+      normalizedPhone
+    );
+  }
+
+  if (!user) {
+    throw new ApiError(
+      StatusCodes.NOT_FOUND,
+      "User not found"
+    );
+  }
+
+  const hashedPassword = await hashPassword(new_password);
+
+  const updatedUser = await this.userRepository.update(
+    user.user_id,
+    {
       user_password: hashedPassword,
-    });
+    }
+  );
 
-    // Mark token as used
-    await this.passwordResetRepository.markResetTokenAsUsed(tokenRecord.prt_id);
-
-    return {
-      message:
-        "Password reset successful. You can now login with your new password.",
-      user_id: user.user_id,
-    };
+  return {
+    message:
+      "Password reset successful. You can now login with your new password.",
+    user_id: updatedUser.user_id,
   };
+};
 }
 
 export default PasswordResetService;

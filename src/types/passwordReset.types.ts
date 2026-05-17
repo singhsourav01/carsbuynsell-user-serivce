@@ -10,7 +10,8 @@ export type VerifyOtpRequestType = {
 };
 
 export type ResetPasswordRequestType = {
-  reset_token: string;
+  email?: string;
+  phone?: string;
   new_password: string;
 };
 

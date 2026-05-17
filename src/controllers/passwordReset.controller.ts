@@ -52,18 +52,19 @@ class PasswordResetController {
    * Request body: { reset_token: string, new_password: string }
    * Resets password using the token obtained after OTP verification
    */
-  resetPassword = asyncHandler(async (req: Request, res: Response) => {
-    const { reset_token, new_password } = req.body;
+resetPassword = asyncHandler(async (req: Request, res: Response) => {
+  const { email, phone, new_password } = req.body;
 
-    const result = await this.passwordResetService.resetPassword({
-      reset_token,
-      new_password,
-    });
-
-    return res
-      .status(StatusCodes.OK)
-      .json(new ApiResponse(StatusCodes.OK, result, result.message));
+  const result = await this.passwordResetService.resetPassword({
+    email,
+    phone,
+    new_password,
   });
+
+  return res
+    .status(StatusCodes.OK)
+    .json(new ApiResponse(StatusCodes.OK, result, result.message));
+});
 }
 
 export default PasswordResetController;
