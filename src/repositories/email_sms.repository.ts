@@ -45,6 +45,18 @@ class EmailSmsRepository {
     });
   };
 
+  findLatestActiveSmsOtp = async (phoneNumber: string) => {
+  return prisma.sms_otp.findFirst({
+    where: {
+      so_phone: phoneNumber,
+      so_is_expired: false,
+    },
+    orderBy: {
+      so_created_at: "desc",
+    },
+  });
+};
+
   expireSmsOtp = async (so_id: string) => {
 
     return prisma.sms_otp.update({

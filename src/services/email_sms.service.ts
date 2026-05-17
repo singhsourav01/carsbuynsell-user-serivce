@@ -87,10 +87,7 @@ verifySms = async (data: any) => {
   } = data;
 
   const smsOtp =
-    await this.emailSmsRepository.findSmsOtp(
-      phoneNumber,
-      verificationId
-    );
+    await this.emailSmsRepository.findLatestActiveSmsOtp(phoneNumber);
 
   if (!smsOtp) {
 
@@ -103,7 +100,7 @@ verifySms = async (data: any) => {
   const response =
     await this.messageCentralProvider.verifyOTP(
       phoneNumber,
-      verificationId,
+      smsOtp.so_verfication_id,
       code
     );
 
