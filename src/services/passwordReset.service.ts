@@ -10,6 +10,7 @@ import {
 } from "../types/passwordReset.types";
 import { generateOtp, hashPassword } from "../utils/helper";
 import MessageCentralProvider from "../utils/messageCentral.provider";
+import EmailSmsService from "./email_sms.service";
 
 const OTP_EXPIRY_MINUTES = 10;
 const RESET_TOKEN_EXPIRY_MINUTES = 15;
@@ -18,11 +19,14 @@ class PasswordResetService {
   private passwordResetRepository: PasswordResetRepository;
   private userRepository: UserRepository;
   private messageCentralProvider: MessageCentralProvider;
+  private emailSmsService: EmailSmsService;
+
 
   constructor() {
     this.passwordResetRepository = new PasswordResetRepository();
     this.userRepository = new UserRepository();
-        this.messageCentralProvider = new MessageCentralProvider();
+    this.emailSmsService = new EmailSmsService();
+    this.messageCentralProvider = new MessageCentralProvider();
 
   }
 
@@ -39,12 +43,12 @@ forgotPassword = async (data: ForgotPasswordRequestType) => {
     );
   }
 
-  let user;
-  let identifier: string;
-  let otpType: "email" | "phone";
-
   if (email) {
-    user = await this.userRepository.getUserByEmail(email);
+    const normalizedEmail = email.trim().toLowerCase();
+
+    const user = await this.userRepository.getUserByEmail(
+      normalizedEmail
+    );
 
     if (!user) {
       throw new ApiError(
@@ -53,79 +57,36 @@ forgotPassword = async (data: ForgotPasswordRequestType) => {
       );
     }
 
-    identifier = email;
-    otpType = "email";
-  } else {
-    user = await this.userRepository.getUserByPhone(phone!);
-
-    if (!user) {
-      throw new ApiError(
-        StatusCodes.NOT_FOUND,
-        API_ERRORS.PHONE_NUMBER_DOSE_NOT_EXISTS
-      );
-    }
-
-    identifier = phone!;
-    otpType = "phone";
-  }
-
-  const userId = user.user_id;
-
-  await this.passwordResetRepository.deleteByUserIdAndType(
-    userId,
-    otpType
-  );
-
-  const expiresAt = new Date(
-    Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000
-  );
-
-  if (otpType === "email") {
-    const otp = generateOtp();
-
-    await this.passwordResetRepository.create({
-      pro_user_id: userId,
-      pro_otp: otp,
-      pro_identifier: identifier,
-      pro_type: "email",
-      pro_verification_id: null,
-      pro_expires_at: expiresAt,
-    });
-
-    console.log(`[DEV] Password reset OTP for ${identifier}: ${otp}`);
+    await this.emailSmsService.sendEmail(normalizedEmail);
 
     return {
-      message: `OTP sent to your email. Valid for ${OTP_EXPIRY_MINUTES} minutes.`,
-      ...(process.env.NODE_ENV === "development" && { otp }),
+      message: "OTP sent to your email.",
+      identifier: normalizedEmail,
+      type: "email",
     };
   }
 
-  const smsResponse =
-    await this.messageCentralProvider.sendOTP(identifier);
+  const normalizedPhone = phone!.replace(/\D/g, "");
 
-  const verificationId =
-    smsResponse?.data?.verificationId;
+  const user = await this.userRepository.getUserByPhone(
+    normalizedPhone
+  );
 
-  if (!verificationId) {
+  if (!user) {
     throw new ApiError(
-      StatusCodes.BAD_GATEWAY,
-      "Failed to send OTP. Verification ID missing"
+      StatusCodes.NOT_FOUND,
+      API_ERRORS.PHONE_NUMBER_DOSE_NOT_EXISTS
     );
   }
 
-  await this.passwordResetRepository.create({
-    pro_user_id: userId,
-    pro_otp: null,
-    pro_identifier: identifier,
-    pro_type: "phone",
-    pro_verification_id: verificationId,
-    pro_expires_at: expiresAt,
-  });
+  await this.messageCentralProvider.sendOTP(normalizedPhone);
 
   return {
-    message: `OTP sent to your phone. Valid for ${OTP_EXPIRY_MINUTES} minutes.`,
+    message: "OTP sent to your phone.",
+    identifier: normalizedPhone,
+    type: "phone",
   };
-};
+};;
 
   /**
    * Step 2: Verify OTP - returns a reset token if valid
