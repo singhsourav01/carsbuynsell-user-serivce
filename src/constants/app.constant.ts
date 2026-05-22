@@ -215,7 +215,7 @@ export const EUREKA = {
   DATA_CENTER_CLASS: "com.netflix.appinfo.InstanceInfo$DefaultDataCenterInfo",
   DATA_CENTER_NAME: "MyOwn",
 };
-export const AUTH_SERVICE = "http://65.2.10.30:3001/auth/.well-known/jwks.json";
+export const AUTH_SERVICE = "https://admin.carsbuynsell.com/api/.well-known/jwks.json";
 // export const AUTH_SERVICE =
 //   "http://localhost:13.201.55.131/auth";
 
