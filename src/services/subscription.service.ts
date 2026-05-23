@@ -50,6 +50,9 @@ class SubscriptionService {
     console.log("creating order service after plan details...");
     const amountInPaise = Number(plan.sp_price) * 100; // Razorpay uses paise
 
+    console.log(razorpay, " here is entire details of razorpay instance");
+    console.log("amountInPaise:", amountInPaise);
+
     const razorpayOrder = await razorpay.orders.create({
         amount: amountInPaise,
         currency: "INR",
