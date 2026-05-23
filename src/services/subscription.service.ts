@@ -46,6 +46,8 @@ class SubscriptionService {
     if (!plan)
         throw new ApiError(StatusCodes.NOT_FOUND, SUBSCRIPTION_ERRORS.PLAN_NOT_FOUND);
 
+    console.log("plan details:", plan);
+    console.log("creating order service after plan details...");
     const amountInPaise = Number(plan.sp_price) * 100; // Razorpay uses paise
 
     const razorpayOrder = await razorpay.orders.create({
