@@ -29,6 +29,7 @@ class SubscriptionService {
     };
 
  createPaymentOrder = async (user_id: string, plan_id: string) => {
+    console.log("creating order service...");
     // Only check canPurchase for the main subscription (not for sell subscription sub_002)
     // Users can pay 800rs anytime to list a vehicle
     if (plan_id !== "sub_002") {
@@ -37,6 +38,9 @@ class SubscriptionService {
             throw new ApiError(StatusCodes.CONFLICT, SUBSCRIPTION_ERRORS.ALREADY_SUBSCRIBED);
     }
 
+    console.log("plan_id:", plan_id);
+    console.log("user_id:", user_id);   
+    console.log("creating order service testing...");
     // Validate plan
     const plan = await this.subscriptionRepository.findPlanById(plan_id);
     if (!plan)

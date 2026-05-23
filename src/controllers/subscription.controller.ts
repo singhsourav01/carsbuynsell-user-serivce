@@ -32,6 +32,10 @@ class SubscriptionController {
         const { user_id } = req.user;
         const { plan_id } = req.body;
 
+        console.log("plan_id:", plan_id);
+        console.log("user_id:", user_id);
+        console.log("creating order controller...");
+
         const order = await this.subscriptionService.createPaymentOrder(user_id, plan_id);
         return res
             .status(StatusCodes.CREATED)
