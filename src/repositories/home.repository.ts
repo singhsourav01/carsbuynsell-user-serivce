@@ -1,4 +1,4 @@
-import { ListingStatus, FuelType, TransmissionType, BodyType, OwnershipType } from "@prisma/client";
+import { ListingStatus, FuelType, TransmissionType, BodyType, OwnershipType, ListingType } from "@prisma/client";
 import prisma from "../configs/prisma.config";
 import { listingSelect } from "../constants/listing.constant";
 import { queryHandler } from "../utils/helper";
@@ -29,11 +29,20 @@ class HomeRepository {
         const skip = (page - 1) * limit;
 
         // Build dynamic where clause
-        const where: any = { lst_status: ListingStatus.ACTIVE ,
-              lst_auction_end: {
-    gt: new Date(),
-  },
-        };
+    const where: any = {
+  lst_status: ListingStatus.ACTIVE,
+  OR: [
+    {
+      lst_type: ListingType.BUY_NOW,
+    },
+    {
+      lst_type: ListingType.AUCTION,
+      lst_auction_end: {
+        gt: new Date(),
+      },
+    },
+  ],
+};
 
         if (query.category) {
             // Support lookup by slug (string) OR by UUID (id)
