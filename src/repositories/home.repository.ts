@@ -29,7 +29,11 @@ class HomeRepository {
         const skip = (page - 1) * limit;
 
         // Build dynamic where clause
-        const where: any = { lst_status: ListingStatus.ACTIVE };
+        const where: any = { lst_status: ListingStatus.ACTIVE ,
+              lst_auction_end: {
+    gt: new Date(),
+  },
+        };
 
         if (query.category) {
             // Support lookup by slug (string) OR by UUID (id)
