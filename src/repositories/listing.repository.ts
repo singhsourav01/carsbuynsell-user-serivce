@@ -313,6 +313,9 @@ class ListingRepository {
 
         const where: any = {
             lst_type: ListingType.AUCTION,
+              lst_auction_end: {
+              gt: new Date(),
+            },
         };
 
         // Status filter (admin can see all statuses)
