@@ -346,7 +346,7 @@ class ListingRepository {
                     },
                     take,
                     skip,
-                    orderBy: { lst_created_at: "desc" },
+                    orderBy: { lst_updated_at: "desc" },
                 }),
                 prisma.listings.count({ where }),
             ])
