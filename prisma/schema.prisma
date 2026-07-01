@@ -111,7 +111,9 @@ enum OwnershipType {
   FIRST_OWNER
   SECOND_OWNER
   THIRD_OWNER
-  FOURTH_OWNER_PLUS
+  FOURTH_OWNER
+  FIFTH_OWNER
+  SIXTH_OWNER
 }
 
 // ─── Existing Models ──────────────────────────────────────────────────────────
