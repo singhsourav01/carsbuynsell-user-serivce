@@ -102,6 +102,16 @@ class HomeService {
             data: enrichedRecent
         };
     };
+    getActiveListings = async (query: ListingsQueryDTO) => {
+        const recent = await this.homeRepository.getActiveListings(query);
+
+        const enrichedRecent = await this.enrichListings(recent.data || []);
+
+        return {
+            ...recent,
+            data: enrichedRecent
+        };
+    };
     /**
      * Helper to enrich listings with signed URLs and listing images from file-service
      */

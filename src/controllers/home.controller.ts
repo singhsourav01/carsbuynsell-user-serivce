@@ -40,6 +40,20 @@ class HomeController {
             )
         );
     });
+
+    getActiveListings = asyncHandler(async (req: Request, res: Response) => {
+        const query = req.query as ListingsQueryDTO;
+
+        const data = await this.homeService.getActiveListings(query);
+
+        return res.status(StatusCodes.OK).json(
+            new ApiResponse(
+                StatusCodes.OK,
+                data,
+                "Active listings fetched successfully"
+            )
+        );
+    });
     // ─── Paginated Listing Feed ───────────────────────────────────────────────────
 
     /**

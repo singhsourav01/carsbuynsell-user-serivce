@@ -138,6 +138,110 @@ class HomeRepository {
         };
     };
 
+        getActiveListingsAuctions = async (query: ListingsQueryDTO) => {
+        const page = Math.max(1, parseInt(query.page ?? "1", 10));
+        const limit = Math.min(50, Math.max(1, parseInt(query.limit ?? "12", 10)));
+        const skip = (page - 1) * limit;
+
+        // Build dynamic where clause
+    const where: any = {
+    lst_status: ListingStatus.ACTIVE
+    };
+
+        if (query.category) {
+            // Support lookup by slug (string) OR by UUID (id)
+            const isUUID = /^[0-9a-f-]{36}$/i.test(query.category);
+            if (isUUID) {
+                where.lst_category_id = query.category;
+            } else {
+                // Filter via relation: listings where category.cat_name = value
+                where.category = { cat_name: query.category };
+            }
+        }
+
+        if (query.type) where.lst_type = query.type;
+
+        // Search filter
+        if (query.search) {
+            where.OR = [
+                { lst_title: { contains: query.search } },
+                { lst_description: { contains: query.search } },
+            ];
+        }
+
+        // Price range filter
+        if (query.min_price || query.max_price) {
+            where.lst_price = {};
+            if (query.min_price) where.lst_price.gte = Number(query.min_price);
+            if (query.max_price) where.lst_price.lte = Number(query.max_price);
+        }
+
+        // Vehicle details filters
+        const vehicleFilters: any = {};
+        
+        if (query.fuel_type) {
+            const fuelTypes = query.fuel_type.split(',').map(f => f.trim().toUpperCase()) as FuelType[];
+            vehicleFilters.lvd_fuel_type = { in: fuelTypes };
+        }
+        
+        if (query.transmission) {
+            const transmissions = query.transmission.split(',').map(t => t.trim().toUpperCase()) as TransmissionType[];
+            vehicleFilters.lvd_transmission = { in: transmissions };
+        }
+        
+        if (query.body_type) {
+            const bodyTypes = query.body_type.split(',').map(b => b.trim().toUpperCase()) as BodyType[];
+            vehicleFilters.lvd_body_type = { in: bodyTypes };
+        }
+        
+        if (query.ownership) {
+            const ownerships = query.ownership.split(',').map(o => o.trim().toUpperCase()) as OwnershipType[];
+            vehicleFilters.lvd_ownership = { in: ownerships };
+        }
+        
+        if (query.min_year || query.max_year) {
+            vehicleFilters.lvd_year = {};
+            if (query.min_year) vehicleFilters.lvd_year.gte = Number(query.min_year);
+            if (query.max_year) vehicleFilters.lvd_year.lte = Number(query.max_year);
+        }
+        
+        if (query.min_km || query.max_km) {
+            vehicleFilters.lvd_kilometers = {};
+            if (query.min_km) vehicleFilters.lvd_kilometers.gte = Number(query.min_km);
+            if (query.max_km) vehicleFilters.lvd_kilometers.lte = Number(query.max_km);
+        }
+
+        // Apply vehicle filters if any exist
+        if (Object.keys(vehicleFilters).length > 0) {
+            where.vehicle_details = vehicleFilters;
+        }
+
+        const [data, total] = await Promise.all([
+            queryHandler(() =>
+                prisma.listings.findMany({
+                    where,
+                    select: listingSelect,
+                    skip,
+                    take: limit,
+                    orderBy: { lst_created_at: "desc" },
+                })
+            ),
+            queryHandler(() => prisma.listings.count({ where })),
+        ]);
+
+        return {
+            data,
+            pagination: {
+                total,
+                page,
+                limit,
+                totalPages: Math.ceil((total as number) / limit),
+                hasNextPage: page < Math.ceil((total as number) / limit),
+                hasPrevPage: page > 1,
+            },
+        };
+    };
+
     // ─── Categories ──────────────────────────────────────────────────────────────
 
     /** Returns all ACTIVE categories (used for tabs / dropdowns). */
