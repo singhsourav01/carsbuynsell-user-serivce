@@ -31,17 +31,7 @@ class HomeRepository {
         // Build dynamic where clause
     const where: any = {
   lst_status: ListingStatus.ACTIVE,
-  OR: [
-    {
-      lst_type: ListingType.BUY_NOW,
-    },
-    {
-      lst_type: ListingType.AUCTION,
-      lst_auction_end: {
-        gt: new Date(),
-      },
-    },
-  ],
+
 };
 
    
