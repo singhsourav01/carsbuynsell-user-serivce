@@ -25,6 +25,8 @@ export const userDeepSelect = {
   user_primary_country_id: true,
   user_primary_phone: true,
   user_admin_status: true,
+  user_email_verified: true,
+  user_phone_verified: true,
   user_profile_image_file_id: true,
   user_selfie_file_id: true,
   is_private_user: true,

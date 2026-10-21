@@ -138,7 +138,19 @@ class UserService {
         API_ERRORS.USER_EXIST_WITH_EMAIL
       );
 
-    return await this.userRepository.update(user_id, data);
+    const updateData = { ...data };
+
+    // Status can stay pending only until the email is verified.
+    // Once verified, profile updates/verification requests must not
+    // move the user back to pending.
+    if (
+      updateData.user_admin_status === ApprovalStatus.PENDING &&
+      user.user_email_verified
+    ) {
+      delete updateData.user_admin_status;
+    }
+
+    return await this.userRepository.update(user_id, updateData);
   };
 
   getUserDetailsByEmailOrPhone = async (user_details: any) => {
@@ -208,6 +220,15 @@ class UserService {
     const userExist = await this.userRepository.getById(user_id);
     if (!userExist)
       throw new ApiError(StatusCodes.BAD_REQUEST, API_ERRORS.USER_NOT_FOUND);
+
+    if (
+      status === ApprovalStatus.PENDING &&
+      userExist.user_email_verified
+    )
+      throw new ApiError(
+        StatusCodes.BAD_REQUEST,
+        API_ERRORS.USER_CANNOT_BE_PENDING_AFTER_VERIFICATION
+      );
 
     if (userExist.user_admin_status === status)
       throw new ApiError(

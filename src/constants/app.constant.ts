@@ -179,6 +179,8 @@ export const API_ERRORS = {
   USER_ALREADY_INVITED: "The user has already been invited",
   USER_EXISTS_WITH_PHONE_EMAIL: "User already exist with same phone & email",
   NO_RECORDS_FOUND: "Unable to find record",
+  USER_CANNOT_BE_PENDING_AFTER_VERIFICATION:
+    "A verified user can no longer be set to pending status.",
 
   // Category
   CATEGORY_NOT_FOUND: "Category not found",
