@@ -298,6 +298,34 @@ class ListingRepository {
     };
 
     /**
+     * Auto-closes any active auctions whose end time has passed,
+     * restoring engagement slots to the participating users.
+     */
+    closeExpiredAuctions = async () => {
+        return queryHandler(async () => {
+            const expired = await prisma.listings.findMany({
+                where: {
+                    lst_type: ListingType.AUCTION,
+                    lst_status: ListingStatus.ACTIVE,
+                    lst_auction_end: { lt: new Date() },
+                },
+                select: { lst_id: true },
+            });
+
+            let closed = 0;
+            for (const listing of expired) {
+                try {
+                    await this.closeAuction(listing.lst_id, "EXPIRED");
+                    closed++;
+                } catch {
+                    // Ignore failures for individual listings
+                }
+            }
+            return closed;
+        });
+    };
+
+    /**
      * Find all auctions with pagination and filters (Admin)
      */
     findAllAuctions = async (query: {

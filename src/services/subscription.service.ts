@@ -7,6 +7,7 @@ import {
     SUBSCRIPTION_PRICE,
 } from "../constants/subscription.constant";
 import SubscriptionRepository from "../repositories/subscription.repository";
+import ListingRepository from "../repositories/listing.repository";
 import { notifySubscriptionSuccess } from "../api/notification.api";
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -19,9 +20,11 @@ const razorpay = new Razorpay({
 
 class SubscriptionService {
     private subscriptionRepository: SubscriptionRepository;
+    private listingRepository: ListingRepository;
 
     constructor() {
         this.subscriptionRepository = new SubscriptionRepository();
+        this.listingRepository = new ListingRepository();
     }
 
     getPlans = async () => {
@@ -120,6 +123,8 @@ class SubscriptionService {
     };
 
     getMySubscription = async (user_id: string) => {
+        // Free up engagement slots for any auctions that have ended
+        await this.listingRepository.closeExpiredAuctions();
         const subscription = await this.subscriptionRepository.findActiveByUserId(user_id);
         if (!subscription)
             throw new ApiError(StatusCodes.NOT_FOUND, SUBSCRIPTION_ERRORS.SUBSCRIPTION_NOT_FOUND);

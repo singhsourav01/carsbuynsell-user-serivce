@@ -333,6 +333,10 @@ class ListingService {
     return this.listingRepository.closeAuction(lst_id, new_status);
   };
 
+  closeExpiredAuctions = async () => {
+    return this.listingRepository.closeExpiredAuctions();
+  };
+
   /**
    * Get all auctions with pagination (Admin)
    */

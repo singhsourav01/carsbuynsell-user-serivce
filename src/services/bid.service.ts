@@ -20,6 +20,9 @@ class BidService {
         // Note: Subscription validation moved inside repository transaction
         // This allows users with existing engagements to bid even if votes are exhausted
         try {
+            // Free up engagement slots for any auctions that have ended
+            await this.listingRepository.closeExpiredAuctions();
+
             // Find the previous highest bidder before placing the new bid
             const previousHighestBid = await prisma.bids.findFirst({
                 where: { bid_listing_id: listing_id },

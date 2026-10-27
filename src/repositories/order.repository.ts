@@ -79,43 +79,8 @@ class OrderRepository {
                 });
                 if (existingOrder) throw new ApiError(StatusCodes.BAD_REQUEST, "ALREADY_PURCHASED");
 
-                // Check subscription has available engagement slots
-                // Order by created_at DESC + filter for remaining_uses > 0 to get newest valid subscription
-                const subscription = await tx.subscriptions.findFirst({
-                    where: {
-                        sub_user_id: buyer_id,
-                        sub_status: "ACTIVE",
-                        sub_expires_at: { gt: new Date() },
-                        sub_remaining_uses: { gt: 0 },
-                    },
-                    orderBy: { sub_created_at: "desc" },
-                });
-
-                if (!subscription) {
-                    throw new ApiError(StatusCodes.BAD_REQUEST, SUBSCRIPTION_ERRORS.SUBSCRIPTION_NOT_FOUND);
-                }
-
-                // Create engagement record (immediately closed for Buy Now)
-                await tx.engagements.create({
-                    data: {
-                        eng_user_id: buyer_id,
-                        eng_subscription_id: subscription.sub_id,
-                        eng_listing_id: listing_id,
-                        eng_type: "BUY_NOW",
-                        eng_status: "CLOSED",
-                        eng_closed_at: new Date(),
-                    },
-                });
-
-                // Decrement subscription uses (this vote is permanently consumed for Buy Now)
-                await tx.subscriptions.update({
-                    where: { sub_id: subscription.sub_id },
-                    data: {
-                        sub_remaining_uses: { decrement: 1 },
-                    },
-                });
-
-                // Create order
+                // Create order record (vehicle is not locked to a single user;
+                // the listing stays visible to all other users)
                 const order = await tx.orders.create({
                     data: {
                         ord_buyer_id: buyer_id,
@@ -124,12 +89,6 @@ class OrderRepository {
                         ord_status: OrderStatus.CONFIRMED,
                     },
                     select: orderSelect,
-                });
-
-                // Mark listing as SOLD
-                await tx.listings.update({
-                    where: { lst_id: listing_id },
-                    data: { lst_status: "SOLD" },
                 });
 
                 return order;

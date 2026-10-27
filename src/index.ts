@@ -28,6 +28,9 @@ import UserVehicleRecordRoutes from "./routes/userVehicleRecord.routes";
 import EmailSmsRoutes from "./routes/email_sms.routes";
 
 import { registerWithEureka } from "./utils/eureka.helper";
+import ListingRepository from "./repositories/listing.repository";
+
+const listingRepository = new ListingRepository();
 
 config();
 
@@ -78,4 +81,13 @@ app.use((err: ApiError, req: Request, res: Response, next: NextFunction) => {
 
 app.listen(port, () => {
   console.log(`Server is listening on port ${port}`);
+
+  // Periodically free engagement slots for auctions that have ended
+  setInterval(async () => {
+    try {
+      await listingRepository.closeExpiredAuctions();
+    } catch (err) {
+      console.error("Error closing expired auctions:", err);
+    }
+  }, 60000);
 });
