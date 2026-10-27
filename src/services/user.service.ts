@@ -354,13 +354,18 @@ class UserService {
   };
 
   getUserFcmTokens = async (user_id: any) => {
-    const userDevices: any = await this.userRepository.getUserDevicesByUserId(
-      user_id
-    );
+    const userDevices: any =
+      await this.userRepository.getUserDevicesByUserId(user_id);
 
-    return userDevices.map((item: any) => {
-      return item.uld_fcm_token;
-    });
+    if (!Array.isArray(userDevices)) return [];
+
+    return [
+      ...new Set(
+        userDevices
+          .map((item: any) => item?.uld_fcm_token)
+          .filter((token: any): token is string => Boolean(token))
+      ),
+    ];
   };
 
   getUserById = async (user_id: any) => {

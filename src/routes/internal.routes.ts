@@ -19,7 +19,15 @@ InternalRoutes.get("/user/:user_id/fcm-tokens", async (req, res) => {
       where: { uld_user_id: req.params.user_id },
       select: { uld_fcm_token: true },
     });
-    res.json({ data: tokens.map((t) => t.uld_fcm_token).filter(Boolean) });
+    res.json({
+      data: [
+        ...new Set(
+          tokens
+            .map((t) => t.uld_fcm_token)
+            .filter((token): token is string => Boolean(token))
+        ),
+      ],
+    });
   } catch (error) {
     console.error("Error fetching FCM tokens:", error);
     res.status(500).json({ data: [] });
@@ -44,7 +52,7 @@ InternalRoutes.get("/users/fcm-tokens", async (req, res) => {
     res.json({
       data: Object.entries(grouped).map(([user_id, tokens]) => ({
         user_id,
-        tokens,
+        tokens: [...new Set(tokens)],
       })),
     });
   } catch (error) {
@@ -88,7 +96,7 @@ InternalRoutes.get("/listing/:listing_id/engaged-users", async (req, res) => {
     res.json({
       data: Object.entries(grouped).map(([user_id, tokens]) => ({
         user_id,
-        tokens,
+        tokens: [...new Set(tokens)],
       })),
     });
   } catch (error) {

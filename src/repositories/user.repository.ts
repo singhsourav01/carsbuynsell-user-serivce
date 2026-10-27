@@ -263,23 +263,38 @@ class UserRepository {
   };
 
   createUserDevice = async (data: createUserDeviceType) => {
-    console.log(data, "data in createUserDevice");
     return queryHandler(async () =>
-      prisma.user_login_devices.upsert({
-        where: {
-          uld_user_id_uld_device_name: {
-            uld_user_id: data.uld_user_id!,
-            uld_device_name: data.uld_device_name,
+      prisma.$transaction(async (tx) => {
+        // A single installation can be registered under different device names
+        // (e.g. the app registers the model name while the auth service uses a
+        // default). Remove any stale row that holds the same FCM token so the
+        // same device does not end up with multiple tokens / duplicate pushes.
+        if (data.uld_user_id && data.uld_fcm_token && data.uld_device_name) {
+          await tx.user_login_devices.deleteMany({
+            where: {
+              uld_user_id: data.uld_user_id,
+              uld_fcm_token: data.uld_fcm_token,
+              NOT: { uld_device_name: data.uld_device_name },
+            },
+          });
+        }
+
+        return tx.user_login_devices.upsert({
+          where: {
+            uld_user_id_uld_device_name: {
+              uld_user_id: data.uld_user_id!,
+              uld_device_name: data.uld_device_name,
+            },
           },
-        },
-        update: {
-          uld_access_token: data.uld_access_token,
-          uld_refresh_token: data.uld_refresh_token,
-          uld_device_type: data.uld_device_type,
-          uld_fcm_token: data.uld_fcm_token,
-          uld_updated_at: new Date(),
-        },
-        create: data,
+          update: {
+            uld_access_token: data.uld_access_token,
+            uld_refresh_token: data.uld_refresh_token,
+            uld_device_type: data.uld_device_type,
+            uld_fcm_token: data.uld_fcm_token,
+            uld_updated_at: new Date(),
+          },
+          create: data,
+        });
       })
     );
   };
@@ -391,32 +406,21 @@ class UserRepository {
   };
 
   getUserDevicesByUserId = async (user_id: string) => {
-    // return queryHandler(
-    //   async () =>
-    //     await prisma.user_login_devices.aggregateRaw({
-    //       pipeline: [
-    //         { $match: { uld_user_id: user_id } },
-    //         {
-    //           $sort: {
-    //             uld_device_name: 1,
-    //             uld_device_type: 1,
-    //             uld_created_at: -1,
-    //           },
-    //         },
-    //         {
-    //           $group: {
-    //             _id: {
-    //               deviceName: "$uld_device_name",
-    //               deviceType: "$uld_device_type",
-    //             },
-    //             document: { $first: "$$ROOT" },
-    //           },
-    //         },
-    //         { $replaceRoot: { newRoot: "$document" } },
-    //       ],
-    //     })
-    // );
-    return null;
+    return queryHandler(async () =>
+      prisma.user_login_devices.findMany({
+        where: { uld_user_id: user_id, uld_fcm_token: { not: null } },
+        orderBy: { uld_updated_at: "desc" },
+        select: {
+          uld_id: true,
+          uld_user_id: true,
+          uld_fcm_token: true,
+          uld_device_name: true,
+          uld_device_type: true,
+          uld_created_at: true,
+          uld_updated_at: true,
+        },
+      })
+    );
   };
 
   updateUserDevice = async (uld_id: string, data: updateUserDeviceType) => {
