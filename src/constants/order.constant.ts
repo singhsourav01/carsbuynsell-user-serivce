@@ -1,6 +1,6 @@
 export const ORDER_ERRORS = {
     ORDER_NOT_FOUND: "Order not found",
-    ALREADY_PURCHASED: "This listing has already been purchased",
+    ALREADY_PURCHASED: "You have already requested this vehicle",
     SUBSCRIPTION_REQUIRED: "An active subscription is required to purchase",
 };
 

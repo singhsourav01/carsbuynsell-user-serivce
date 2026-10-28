@@ -1,5 +1,6 @@
 import { ApiError } from "common-microservices-utils";
 import { StatusCodes } from "http-status-codes";
+import { ListingStatus } from "@prisma/client";
 import { LISTING_ERRORS } from "../constants/listing.constant";
 import ListingRepository from "../repositories/listing.repository";
 import {
@@ -309,7 +310,21 @@ class ListingService {
         StatusCodes.NOT_FOUND,
         LISTING_ERRORS.LISTING_NOT_FOUND,
       );
-    return this.listingRepository.update(lst_id, data);
+
+    // Ending a live auction must go through closeAuction so bidders get
+    // their engagement slots back.
+    const endsLiveAuction =
+      listing.lst_type === "AUCTION" &&
+      listing.lst_status === "ACTIVE" &&
+      data.lst_status !== undefined &&
+      data.lst_status !== "ACTIVE";
+    if (!endsLiveAuction) return this.listingRepository.update(lst_id, data);
+
+    const { lst_status, ...rest } = data;
+    if (Object.keys(rest).length > 0)
+      await this.listingRepository.update(lst_id, rest);
+    const result = await this.listingRepository.closeAuction(lst_id, lst_status);
+    return result.listing;
   };
   getListingByCategoryId = async (
     cat_id: string,
@@ -329,7 +344,7 @@ class ListingService {
    * Closes an auction (admin only).
    * Restores votes to all bidders who had active engagements on this listing.
    */
-  closeAuction = async (lst_id: string, new_status: "SOLD" | "EXPIRED") => {
+  closeAuction = async (lst_id: string, new_status: Exclude<ListingStatus, "ACTIVE">) => {
     return this.listingRepository.closeAuction(lst_id, new_status);
   };
 

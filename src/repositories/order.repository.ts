@@ -54,9 +54,9 @@ class OrderRepository {
     };
 
     /**
-     * Creates an order using a transaction to prevent double-purchase.
-     * Buy Now immediately closes the engagement since the listing is sold.
-     * Vote is NOT restored for Buy Now (item is purchased, engagement complete).
+     * Records a Buy Now request. Many users can request the same listing;
+     * each user can request a given listing only once. The listing stays
+     * ACTIVE and no engagement slot is used.
      */
     buyNow = async (listing_id: string, buyer_id: string) => {
         return queryHandler(async () => {
@@ -70,10 +70,11 @@ class OrderRepository {
                 if (listing.lst_type !== "BUY_NOW") throw new ApiError(StatusCodes.BAD_REQUEST, "LISTING_NOT_BUY_NOW");
                 if (listing.lst_seller_id === buyer_id) throw new ApiError(StatusCodes.BAD_REQUEST, "CANNOT_BUY_OWN_LISTING");
 
-                // Check no existing confirmed order
+                // Check this user hasn't already requested this listing
                 const existingOrder = await tx.orders.findFirst({
                     where: {
                         ord_listing_id: listing_id,
+                        ord_buyer_id: buyer_id,
                         ord_status: { not: OrderStatus.CANCELLED },
                     },
                 });

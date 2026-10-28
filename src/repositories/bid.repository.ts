@@ -1,7 +1,7 @@
 import { ApiError } from "common-microservices-utils";
 import prisma from "../configs/prisma.config";
 import { bidSelect } from "../constants/bid.constant";
-import { SUBSCRIPTION_ERRORS } from "../constants/subscription.constant";
+import { SELL_PLAN_ID, SUBSCRIPTION_ERRORS } from "../constants/subscription.constant";
 import { queryHandler } from "../utils/helper";
 import { StatusCodes } from "http-status-codes";
 
@@ -95,6 +95,7 @@ class BidRepository {
                             sub_status: "ACTIVE",
                             sub_expires_at: { gt: new Date() },
                             sub_remaining_uses: { gt: 0 },
+                            sub_plan_id: { not: SELL_PLAN_ID },
                         },
                         orderBy: { sub_created_at: "desc" }, // Prefer newest subscription
                     });
@@ -106,6 +107,7 @@ class BidRepository {
                                 sub_user_id: bidder_id,
                                 sub_status: "ACTIVE",
                                 sub_expires_at: { gt: new Date() },
+                                sub_plan_id: { not: SELL_PLAN_ID },
                             },
                         });
 
@@ -129,13 +131,17 @@ class BidRepository {
                         },
                     });
 
-                    // Decrement subscription uses (lock a vote)
-                    await tx.subscriptions.update({
-                        where: { sub_id: subscription.sub_id },
+                    // Decrement subscription uses (lock a vote). Conditional update so
+                    // concurrent first-bids can't push the count below zero.
+                    const decremented = await tx.subscriptions.updateMany({
+                        where: { sub_id: subscription.sub_id, sub_remaining_uses: { gt: 0 } },
                         data: {
                             sub_remaining_uses: { decrement: 1 },
                         },
                     });
+                    if (decremented.count === 0) {
+                        throw new ApiError(StatusCodes.BAD_REQUEST, SUBSCRIPTION_ERRORS.ENGAGEMENT_LIMIT_REACHED);
+                    }
                 }
                 // If existingEngagement exists, user can bid without using a new vote
 

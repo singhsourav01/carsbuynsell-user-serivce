@@ -1,6 +1,6 @@
 import { SubscriptionStatus } from "@prisma/client";
 import prisma from "../configs/prisma.config";
-import { subscriptionSelect, SUBSCRIPTION_LIMIT } from "../constants/subscription.constant";
+import { engagementSelect, subscriptionSelect, SELL_PLAN_ID, SUBSCRIPTION_LIMIT } from "../constants/subscription.constant";
 import { queryHandler } from "../utils/helper";
 
 class SubscriptionRepository {
@@ -33,6 +33,7 @@ class SubscriptionRepository {
                     sub_status: SubscriptionStatus.ACTIVE,
                     sub_expires_at: { gt: new Date() },
                     sub_remaining_uses: { gt: 0 }, // Only subscriptions with available slots
+                    sub_plan_id: { not: SELL_PLAN_ID },
                 },
                 select: subscriptionSelect,
                 orderBy: { sub_created_at: "desc" }, // Newest first
@@ -44,7 +45,8 @@ class SubscriptionRepository {
 
     /**
      * Finds active subscription regardless of remaining uses.
-     * Used for checking if user has any active subscription.
+     * Used for checking if user has any active subscription (e.g. Buy Now).
+     * Prefers the subscription with the most free slots.
      */
     findActiveSubscriptionAny = async (user_id: string) => {
         return queryHandler(() =>
@@ -53,15 +55,29 @@ class SubscriptionRepository {
                     sub_user_id: user_id,
                     sub_status: SubscriptionStatus.ACTIVE,
                     sub_expires_at: { gt: new Date() },
+                    sub_plan_id: { not: SELL_PLAN_ID },
                 },
                 select: subscriptionSelect,
+                orderBy: [{ sub_remaining_uses: "desc" }, { sub_created_at: "desc" }],
+            })
+        );
+    };
+
+    /** Active auction engagements (occupied slots) for a user. */
+    findActiveEngagements = async (user_id: string) => {
+        return queryHandler(() =>
+            prisma.engagements.findMany({
+                where: { eng_user_id: user_id, eng_status: "ACTIVE" },
+                select: engagementSelect,
+                orderBy: { eng_created_at: "desc" },
             })
         );
     };
 
     /**
      * Checks if a user can purchase a new subscription.
-     * Returns true if user has no active subscription OR if all engagement slots are used.
+     * Returns true only if user has no active subscription. When all slots are
+     * in use the user must wait for an auction to end instead of buying again.
      */
     canPurchaseSubscription = async (user_id: string) => {
         return queryHandler(async () => {
@@ -70,23 +86,12 @@ class SubscriptionRepository {
                     sub_user_id: user_id,
                     sub_status: SubscriptionStatus.ACTIVE,
                     sub_expires_at: { gt: new Date() },
+                    sub_plan_id: { not: SELL_PLAN_ID },
                 },
-                select: {
-                    sub_id: true,
-                    sub_remaining_uses: true,
-                },
+                select: { sub_id: true },
             });
 
-            // No active subscription - can purchase
-            if (!subscription) return true;
-
-            // All engagement slots are used - can purchase new subscription
-            if (subscription.sub_remaining_uses <= 0) {
-                return true;
-            }
-
-            // User has active subscription with engagement slots available - cannot purchase
-            return false;
+            return !subscription;
         });
     };
 

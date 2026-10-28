@@ -17,8 +17,8 @@ class OrderService {
     }
 
     buyNow = async (listing_id: string, buyer_id: string) => {
-        // 1. Validate active subscription
-        const subscription = await this.subscriptionRepository.findActiveByUserId(buyer_id);
+        // 1. Validate active subscription (Buy Now does not use an engagement slot)
+        const subscription = await this.subscriptionRepository.findActiveSubscriptionAny(buyer_id);
         if (!subscription)
             throw new ApiError(StatusCodes.FORBIDDEN, SUBSCRIPTION_ERRORS.SUBSCRIPTION_NOT_FOUND);
 

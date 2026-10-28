@@ -1,14 +1,15 @@
 export const SUBSCRIPTION_PRICE = 10000; // Fixed price in INR (rupees)
 export const SUBSCRIPTION_LIMIT = 3;      // Max active vehicle engagements at a time
+export const SELL_PLAN_ID = "sub_002";    // Vehicle listing fee plan - does not grant auction / buy now access
 
 export const SUBSCRIPTION_ERRORS = {
     PLAN_NOT_FOUND: "Subscription plan not found",
     SUBSCRIPTION_NOT_FOUND: "No active subscription found",
-    ALREADY_SUBSCRIBED: "You already have an active subscription with available engagement slots",
+    ALREADY_SUBSCRIBED: "You already have an active subscription",
     PAYMENT_FAILED: "Payment verification failed",
     INVALID_SIGNATURE: "Invalid payment signature",
-    USES_EXHAUSTED: "All 3 engagement slots are in use. Wait for an auction to close or purchase a new subscription",
-    ENGAGEMENT_LIMIT_REACHED: "You have reached the maximum of 3 active engagements. Wait for an auction to close or purchase a new subscription",
+    USES_EXHAUSTED: "All 3 engagement slots are in use. Wait for an auction to end",
+    ENGAGEMENT_LIMIT_REACHED: "You have reached the maximum of 3 active auctions. Wait for an auction to end",
     PENDING_SUB_NOT_FOUND: "No pending subscription found for this order",
 };
 

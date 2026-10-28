@@ -3,6 +3,7 @@ import { StatusCodes } from "http-status-codes";
 import { addDays } from "date-fns";
 import crypto from "crypto";
 import {
+    SELL_PLAN_ID,
     SUBSCRIPTION_ERRORS,
     SUBSCRIPTION_PRICE,
 } from "../constants/subscription.constant";
@@ -35,7 +36,7 @@ class SubscriptionService {
     console.log("creating order service...");
     // Only check canPurchase for the main subscription (not for sell subscription sub_002)
     // Users can pay 800rs anytime to list a vehicle
-    if (plan_id !== "sub_002") {
+    if (plan_id !== SELL_PLAN_ID) {
         const canPurchase = await this.subscriptionRepository.canPurchaseSubscription(user_id);
         if (!canPurchase)
             throw new ApiError(StatusCodes.CONFLICT, SUBSCRIPTION_ERRORS.ALREADY_SUBSCRIBED);
@@ -125,10 +126,17 @@ class SubscriptionService {
     getMySubscription = async (user_id: string) => {
         // Free up engagement slots for any auctions that have ended
         await this.listingRepository.closeExpiredAuctions();
-        const subscription = await this.subscriptionRepository.findActiveByUserId(user_id);
+        // Return the subscription even when all slots are in use, so the app can
+        // show "wait for an auction to end" instead of the purchase screen.
+        const subscription = await this.subscriptionRepository.findActiveSubscriptionAny(user_id);
         if (!subscription)
             throw new ApiError(StatusCodes.NOT_FOUND, SUBSCRIPTION_ERRORS.SUBSCRIPTION_NOT_FOUND);
-        return subscription;
+        const engagements = await this.subscriptionRepository.findActiveEngagements(user_id);
+        return {
+            ...subscription,
+            engagements,
+            slots_exhausted: subscription.sub_remaining_uses <= 0,
+        };
     };
 
     getAllForAdmin = async (page: number, take: number) => {

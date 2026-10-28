@@ -239,10 +239,10 @@ class ListingRepository {
 
     /**
      * Closes an auction and restores votes to all participating bidders.
-     * Sets listing status to SOLD or EXPIRED, closes all active engagements,
+     * Sets listing status (SOLD, EXPIRED, CANCELLED, ...), closes all active engagements,
      * and increments sub_remaining_uses for each affected subscription.
      */
-    closeAuction = async (listing_id: string, new_status: "SOLD" | "EXPIRED") => {
+    closeAuction = async (listing_id: string, new_status: Exclude<ListingStatus, "ACTIVE">) => {
         return queryHandler(async () => {
             return await prisma.$transaction(async (tx) => {
                 // Get the listing
