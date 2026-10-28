@@ -310,21 +310,8 @@ class ListingService {
         StatusCodes.NOT_FOUND,
         LISTING_ERRORS.LISTING_NOT_FOUND,
       );
-
-    // Ending a live auction must go through closeAuction so bidders get
-    // their engagement slots back.
-    const endsLiveAuction =
-      listing.lst_type === "AUCTION" &&
-      listing.lst_status === "ACTIVE" &&
-      data.lst_status !== undefined &&
-      data.lst_status !== "ACTIVE";
-    if (!endsLiveAuction) return this.listingRepository.update(lst_id, data);
-
-    const { lst_status, ...rest } = data;
-    if (Object.keys(rest).length > 0)
-      await this.listingRepository.update(lst_id, rest);
-    const result = await this.listingRepository.closeAuction(lst_id, lst_status);
-    return result.listing;
+    // listingRepository.update frees bidders' slots if this ends a live auction
+    return this.listingRepository.update(lst_id, data);
   };
   getListingByCategoryId = async (
     cat_id: string,

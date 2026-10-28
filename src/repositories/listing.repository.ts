@@ -1,4 +1,4 @@
-import { ListingStatus, ListingType, FuelType, TransmissionType, BodyType, OwnershipType } from "@prisma/client";
+import { ListingStatus, ListingType, FuelType, TransmissionType, BodyType, OwnershipType, Prisma } from "@prisma/client";
 import prisma from "../configs/prisma.config";
 import { listingSelect } from "../constants/listing.constant";
 import { queryHandler } from "../utils/helper";
@@ -10,9 +10,15 @@ class ListingRepository {
         const take = Number(query.page_size || "10");
         const skip = (page - 1) * take;
 
-        // Default to ACTIVE status unless explicitly specified (admin may want to see all)
+        // Default to ACTIVE status unless explicitly specified. Accepts a
+        // comma-separated list, e.g. "ACTIVE,SOLD,EXPIRED" to include ended auctions.
+        const requested = (query.status || "")
+            .split(",")
+            .map(s => s.trim().toUpperCase())
+            .filter((s): s is ListingStatus => s in ListingStatus);
+        const statuses = requested.length > 0 ? requested : [ListingStatus.ACTIVE];
         const where: any = {
-            lst_status: query.status ? query.status as ListingStatus : ListingStatus.ACTIVE
+            lst_status: statuses.length === 1 ? statuses[0] : { in: statuses }
         };
 
         if (query.search) {
@@ -77,7 +83,9 @@ class ListingRepository {
                     select: listingSelect,
                     take,
                     skip,
-                    orderBy: { lst_created_at: "desc" },
+                    // Status enum order is DRAFT, ACTIVE, SOLD, EXPIRED, CANCELLED,
+                    // so live listings come before ended ones
+                    orderBy: [{ lst_status: "asc" }, { lst_created_at: "desc" }],
                 }),
                 prisma.listings.count({ where }),
             ])
@@ -110,19 +118,63 @@ class ListingRepository {
         );
     };
 
+    /**
+     * Closes all active engagements on a listing and gives each bidder their
+     * slot back. Must run whenever a live auction stops being live (ended,
+     * status changed, type changed or deleted), or the slots stay locked.
+     */
+    private releaseEngagements = async (tx: Prisma.TransactionClient, listing_id: string) => {
+        const activeEngagements = await tx.engagements.findMany({
+            where: { eng_listing_id: listing_id, eng_status: "ACTIVE" },
+        });
+
+        for (const engagement of activeEngagements) {
+            await tx.engagements.update({
+                where: { eng_id: engagement.eng_id },
+                data: { eng_status: "CLOSED", eng_closed_at: new Date() },
+            });
+            await tx.subscriptions.update({
+                where: { sub_id: engagement.eng_subscription_id },
+                data: { sub_remaining_uses: { increment: 1 } },
+            });
+        }
+
+        return activeEngagements.length;
+    };
+
     update = async (lst_id: string, data: updateListingType) => {
         return queryHandler(() =>
-            prisma.listings.update({
-                where: { lst_id },
-                data: data as any,
-                select: listingSelect,
+            prisma.$transaction(async (tx) => {
+                const current = await tx.listings.findUnique({
+                    where: { lst_id },
+                    select: { lst_type: true, lst_status: true },
+                });
+                const next = data as any;
+                const wasLiveAuction =
+                    current?.lst_type === ListingType.AUCTION &&
+                    current?.lst_status === ListingStatus.ACTIVE;
+                const stillLiveAuction =
+                    (next.lst_type ?? current?.lst_type) === ListingType.AUCTION &&
+                    (next.lst_status ?? current?.lst_status) === ListingStatus.ACTIVE;
+                if (wasLiveAuction && !stillLiveAuction)
+                    await this.releaseEngagements(tx, lst_id);
+
+                return tx.listings.update({
+                    where: { lst_id },
+                    data: next,
+                    select: listingSelect,
+                });
             })
         );
     };
 
     delete = async (lst_id: string) => {
         return queryHandler(() =>
-            prisma.listings.delete({ where: { lst_id } })
+            prisma.$transaction(async (tx) => {
+                // Engagements cascade-delete with the listing, so free the slots first
+                await this.releaseEngagements(tx, lst_id);
+                return tx.listings.delete({ where: { lst_id } });
+            })
         );
     };
 
@@ -254,33 +306,7 @@ class ListingRepository {
                 if (listing.lst_type !== "AUCTION") throw new Error("LISTING_NOT_AUCTION");
                 if (listing.lst_status !== "ACTIVE") throw new Error("LISTING_NOT_ACTIVE");
 
-                // Find all active engagements for this listing
-                const activeEngagements = await tx.engagements.findMany({
-                    where: {
-                        eng_listing_id: listing_id,
-                        eng_status: "ACTIVE",
-                    },
-                });
-
-                // Close all active engagements and restore votes
-                for (const engagement of activeEngagements) {
-                    // Mark engagement as closed
-                    await tx.engagements.update({
-                        where: { eng_id: engagement.eng_id },
-                        data: {
-                            eng_status: "CLOSED",
-                            eng_closed_at: new Date(),
-                        },
-                    });
-
-                    // Restore vote to the subscription (increment remaining uses)
-                    await tx.subscriptions.update({
-                        where: { sub_id: engagement.eng_subscription_id },
-                        data: {
-                            sub_remaining_uses: { increment: 1 },
-                        },
-                    });
-                }
+                const engagementsClosed = await this.releaseEngagements(tx, listing_id);
 
                 // Update listing status
                 const updatedListing = await tx.listings.update({
@@ -291,7 +317,7 @@ class ListingRepository {
 
                 return {
                     listing: updatedListing,
-                    engagements_closed: activeEngagements.length,
+                    engagements_closed: engagementsClosed,
                 };
             });
         });
