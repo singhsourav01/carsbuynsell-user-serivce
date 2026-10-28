@@ -1,18 +1,14 @@
-import { ListingStatus, ListingType } from "@prisma/client";
+import { ListingStatus } from "@prisma/client";
 
 /**
- * Which listings users can see: every ACTIVE listing, plus auctions that have
- * ended (SOLD / EXPIRED) — those stay visible, but bidding is closed.
- * Use under `AND` so it doesn't clash with a search `OR`.
+ * Which listings users can see: all listings, including expired / sold ones
+ * (bidding and Buy Now stay closed on those). Only drafts and listings the
+ * admin cancelled are hidden.
  */
 export const visibleListingsWhere = {
-    OR: [
-        { lst_status: ListingStatus.ACTIVE },
-        {
-            lst_type: ListingType.AUCTION,
-            lst_status: { in: [ListingStatus.SOLD, ListingStatus.EXPIRED] },
-        },
-    ],
+    lst_status: {
+        in: [ListingStatus.ACTIVE, ListingStatus.SOLD, ListingStatus.EXPIRED],
+    },
 };
 
 /** Live listings first (enum order: DRAFT, ACTIVE, SOLD, EXPIRED, ...), then newest. */

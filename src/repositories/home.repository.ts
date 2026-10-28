@@ -20,8 +20,8 @@ class HomeRepository {
 
     /**
      * Paginated listings with optional category (slug OR id) and type filters.
-     * Passing no `category` returns ALL visible listings (the "All" tab):
-     * active listings plus ended auctions.
+     * Passing no `category` returns ALL visible listings (the "All" tab),
+     * including expired / sold ones — see visibleListingsWhere.
      * Now supports vehicle detail filters: fuel_type, transmission, body_type, ownership, year, km
      */
     getActiveListings = async (query: ListingsQueryDTO) => {
@@ -30,7 +30,7 @@ class HomeRepository {
         const skip = (page - 1) * limit;
 
         // Build dynamic where clause
-        const where: any = { AND: [visibleListingsWhere] };
+        const where: any = { ...visibleListingsWhere };
 
    
 
