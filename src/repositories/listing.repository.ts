@@ -1,6 +1,6 @@
 import { ListingStatus, ListingType, FuelType, TransmissionType, BodyType, OwnershipType, Prisma } from "@prisma/client";
 import prisma from "../configs/prisma.config";
-import { listingSelect, visibleListingsOrderBy, visibleListingsWhere } from "../constants/listing.constant";
+import { listingSelect } from "../constants/listing.constant";
 import { queryHandler } from "../utils/helper";
 import { createListingType, ListingQueryDTO, updateListingType } from "../types/listing.types";
 
@@ -10,10 +10,10 @@ class ListingRepository {
         const take = Number(query.page_size || "10");
         const skip = (page - 1) * take;
 
-        // Default to visible listings (active + ended auctions) unless a status is specified
-        const where: any = query.status
-            ? { lst_status: query.status as ListingStatus }
-            : { AND: [visibleListingsWhere] };
+        // Default to ACTIVE status unless explicitly specified (admin may want to see all)
+        const where: any = {
+            lst_status: query.status ? query.status as ListingStatus : ListingStatus.ACTIVE
+        };
 
         if (query.search) {
             where.OR = [
@@ -77,7 +77,7 @@ class ListingRepository {
                     select: listingSelect,
                     take,
                     skip,
-                    orderBy: visibleListingsOrderBy,
+                    orderBy: { lst_created_at: "desc" },
                 }),
                 prisma.listings.count({ where }),
             ])
@@ -189,7 +189,7 @@ class ListingRepository {
 
     getListingByCategoryId = async (cat_id: string, page: number, take: number) => {
         const skip = (page - 1) * take;
-        const where = { lst_category_id: cat_id, AND: [visibleListingsWhere] };
+        const where = { lst_category_id: cat_id, lst_status: ListingStatus.ACTIVE };
         const [listings, count] = await queryHandler(() =>
             prisma.$transaction([
                 prisma.listings.findMany({
@@ -197,7 +197,7 @@ class ListingRepository {
                     select: listingSelect,
                     take,
                     skip,
-                    orderBy: visibleListingsOrderBy,
+                    orderBy: { lst_created_at: "desc" },
                 }),
                 prisma.listings.count({ where }),
             ])
@@ -208,10 +208,10 @@ class ListingRepository {
     findFeatured = async () => {
         return queryHandler(() =>
             prisma.listings.findMany({
-                where: { lst_is_featured: true, AND: [visibleListingsWhere] },
+                where: { lst_is_featured: true, lst_status: ListingStatus.ACTIVE },
                 select: listingSelect,
                 take: 10,
-                orderBy: [{ lst_status: "asc" }, { lst_updated_at: "desc" }],
+                orderBy: { lst_updated_at: "desc" },
             })
         );
     };

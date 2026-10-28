@@ -10,10 +10,10 @@ class HomeRepository {
     getFeaturedListings = async () => {
         return queryHandler(() =>
             prisma.listings.findMany({
-                where: { lst_is_featured: true, AND: [visibleListingsWhere] },
+                where: { lst_is_featured: true, lst_status: ListingStatus.ACTIVE },
                 select: listingSelect,
                 take: 10,
-                orderBy: [{ lst_status: "asc" }, { lst_updated_at: "desc" }],
+                orderBy: { lst_updated_at: "desc" },
             })
         );
     };
