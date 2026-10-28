@@ -165,6 +165,8 @@ class ListingRepository {
             prisma.$transaction(async (tx) => {
                 // Engagements cascade-delete with the listing, so free the slots first
                 await this.releaseEngagements(tx, lst_id);
+                // Orders (Buy Now requests) don't cascade and would block the delete
+                await tx.orders.deleteMany({ where: { ord_listing_id: lst_id } });
                 return tx.listings.delete({ where: { lst_id } });
             })
         );
