@@ -112,14 +112,13 @@ class SubscriptionService {
         );
 
         // Fire-and-forget: Send subscription success notification
-        // if (activated) {
-        //     const plan = await this.subscriptionRepository.findPlanById(pending.sub_plan_id);
-        //     notifySubscriptionSuccess(
-        //         pending.sub_user_id,
-        //         plan?.sp_name || "Premium",
-        //         pending.sub_expires_at.toISOString().split("T")[0]
-        //     ).catch(() => {});
-        // }
+        if (activated) {
+            notifySubscriptionSuccess(
+                pending.sub_user_id,
+                pending.plan?.sp_name || "Premium",
+                pending.sub_expires_at.toISOString().split("T")[0]
+            ).catch(() => {});
+        }
 
         return activated;
     };

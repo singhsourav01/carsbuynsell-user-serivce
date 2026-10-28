@@ -12,6 +12,28 @@ InternalRoutes.route(API_ENDPOINTS.USER_DEVICE_BY_USER_ID).delete(
 
 // ─── FCM Token Endpoints (for notification-service) ───────────────────────────
 
+// POST /user/internal/fcm-tokens/remove  { tokens: string[] }
+// Clears tokens Firebase reported as no longer registered (app uninstalled /
+// reinstalled / data cleared). The device row stays; the app writes a fresh
+// token the next time it is opened.
+InternalRoutes.post("/fcm-tokens/remove", async (req, res) => {
+  try {
+    const tokens: unknown = req.body?.tokens;
+    if (!Array.isArray(tokens) || tokens.length === 0) {
+      return res.status(400).json({ data: { removed: 0 }, message: "tokens[] is required" });
+    }
+    const valid = tokens.filter((t): t is string => typeof t === "string" && t.length > 0);
+    const result = await prisma.user_login_devices.updateMany({
+      where: { uld_fcm_token: { in: valid } },
+      data: { uld_fcm_token: null },
+    });
+    res.json({ data: { removed: result.count } });
+  } catch (error) {
+    console.error("Error removing stale FCM tokens:", error);
+    res.status(500).json({ data: { removed: 0 } });
+  }
+});
+
 // GET /user/internal/user/:user_id/fcm-tokens
 InternalRoutes.get("/user/:user_id/fcm-tokens", async (req, res) => {
   try {
