@@ -1,6 +1,6 @@
 import { ListingStatus, FuelType, TransmissionType, BodyType, OwnershipType, ListingType } from "@prisma/client";
 import prisma from "../configs/prisma.config";
-import { listingSelect } from "../constants/listing.constant";
+import { listingSelect, visibleListingsOrderBy, visibleListingsWhere } from "../constants/listing.constant";
 import { queryHandler } from "../utils/helper";
 import { CreateCategoryDTO, ListingsQueryDTO } from "../types/home.types";
 
@@ -10,17 +10,18 @@ class HomeRepository {
     getFeaturedListings = async () => {
         return queryHandler(() =>
             prisma.listings.findMany({
-                where: { lst_is_featured: true, lst_status: ListingStatus.ACTIVE },
+                where: { lst_is_featured: true, AND: [visibleListingsWhere] },
                 select: listingSelect,
                 take: 10,
-                orderBy: { lst_updated_at: "desc" },
+                orderBy: [{ lst_status: "asc" }, { lst_updated_at: "desc" }],
             })
         );
     };
 
     /**
      * Paginated listings with optional category (slug OR id) and type filters.
-     * Passing no `category` returns ALL active listings (the "All" tab).
+     * Passing no `category` returns ALL visible listings (the "All" tab):
+     * active listings plus ended auctions.
      * Now supports vehicle detail filters: fuel_type, transmission, body_type, ownership, year, km
      */
     getActiveListings = async (query: ListingsQueryDTO) => {
@@ -29,10 +30,7 @@ class HomeRepository {
         const skip = (page - 1) * limit;
 
         // Build dynamic where clause
-    const where: any = {
-  lst_status: ListingStatus.ACTIVE,
-
-};
+        const where: any = { AND: [visibleListingsWhere] };
 
    
 
@@ -111,7 +109,7 @@ class HomeRepository {
                     select: listingSelect,
                     skip,
                     take: limit,
-                    orderBy: { lst_created_at: "desc" },
+                    orderBy: visibleListingsOrderBy,
                 })
             ),
             queryHandler(() => prisma.listings.count({ where })),

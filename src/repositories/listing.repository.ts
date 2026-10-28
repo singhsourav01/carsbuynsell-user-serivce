@@ -1,6 +1,6 @@
 import { ListingStatus, ListingType, FuelType, TransmissionType, BodyType, OwnershipType, Prisma } from "@prisma/client";
 import prisma from "../configs/prisma.config";
-import { listingSelect } from "../constants/listing.constant";
+import { listingSelect, visibleListingsOrderBy, visibleListingsWhere } from "../constants/listing.constant";
 import { queryHandler } from "../utils/helper";
 import { createListingType, ListingQueryDTO, updateListingType } from "../types/listing.types";
 
@@ -10,16 +10,10 @@ class ListingRepository {
         const take = Number(query.page_size || "10");
         const skip = (page - 1) * take;
 
-        // Default to ACTIVE status unless explicitly specified. Accepts a
-        // comma-separated list, e.g. "ACTIVE,SOLD,EXPIRED" to include ended auctions.
-        const requested = (query.status || "")
-            .split(",")
-            .map(s => s.trim().toUpperCase())
-            .filter((s): s is ListingStatus => s in ListingStatus);
-        const statuses = requested.length > 0 ? requested : [ListingStatus.ACTIVE];
-        const where: any = {
-            lst_status: statuses.length === 1 ? statuses[0] : { in: statuses }
-        };
+        // Default to visible listings (active + ended auctions) unless a status is specified
+        const where: any = query.status
+            ? { lst_status: query.status as ListingStatus }
+            : { AND: [visibleListingsWhere] };
 
         if (query.search) {
             where.OR = [
@@ -83,9 +77,7 @@ class ListingRepository {
                     select: listingSelect,
                     take,
                     skip,
-                    // Status enum order is DRAFT, ACTIVE, SOLD, EXPIRED, CANCELLED,
-                    // so live listings come before ended ones
-                    orderBy: [{ lst_status: "asc" }, { lst_created_at: "desc" }],
+                    orderBy: visibleListingsOrderBy,
                 }),
                 prisma.listings.count({ where }),
             ])
@@ -197,7 +189,7 @@ class ListingRepository {
 
     getListingByCategoryId = async (cat_id: string, page: number, take: number) => {
         const skip = (page - 1) * take;
-        const where = { lst_category_id: cat_id, lst_status: ListingStatus.ACTIVE };
+        const where = { lst_category_id: cat_id, AND: [visibleListingsWhere] };
         const [listings, count] = await queryHandler(() =>
             prisma.$transaction([
                 prisma.listings.findMany({
@@ -205,7 +197,7 @@ class ListingRepository {
                     select: listingSelect,
                     take,
                     skip,
-                    orderBy: { lst_created_at: "desc" },
+                    orderBy: visibleListingsOrderBy,
                 }),
                 prisma.listings.count({ where }),
             ])
@@ -216,10 +208,10 @@ class ListingRepository {
     findFeatured = async () => {
         return queryHandler(() =>
             prisma.listings.findMany({
-                where: { lst_is_featured: true, lst_status: ListingStatus.ACTIVE },
+                where: { lst_is_featured: true, AND: [visibleListingsWhere] },
                 select: listingSelect,
                 take: 10,
-                orderBy: { lst_updated_at: "desc" },
+                orderBy: [{ lst_status: "asc" }, { lst_updated_at: "desc" }],
             })
         );
     };

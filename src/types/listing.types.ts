@@ -32,7 +32,7 @@ export type ListingQueryDTO = {
   search?: string;
   category?: string;
   type?: ListingType;
-  status?: string;         // Comma-separated ListingStatus: "ACTIVE,SOLD,EXPIRED"
+  status?: ListingStatus;
   min_price?: string;
   max_price?: string;
   is_featured?: string;
