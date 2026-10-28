@@ -1,7 +1,9 @@
 import { ApiError } from "common-microservices-utils";
+import { Prisma } from "@prisma/client";
 import prisma from "../configs/prisma.config";
 import { bidSelect } from "../constants/bid.constant";
-import { SELL_PLAN_ID, SUBSCRIPTION_ERRORS } from "../constants/subscription.constant";
+import { SELL_PLAN_ID, SUBSCRIPTION_ERRORS, SUBSCRIPTION_LIMIT } from "../constants/subscription.constant";
+import { countUsedSlots, syncRemainingUses } from "./subscription.repository";
 import { queryHandler } from "../utils/helper";
 import { StatusCodes } from "http-status-codes";
 
@@ -42,8 +44,8 @@ class BidRepository {
 
     /**
      * Places a bid using a Prisma transaction to prevent race conditions.
-     * Creates an engagement if this is the user's first bid on this listing.
-     * Multiple bids on the same listing don't consume additional votes.
+     * The first bid on an auction takes one of the user's 3 slots (engagement);
+     * further bids on the same auction don't take another.
      */
     placeBid = async (
         listing_id: string,
@@ -85,65 +87,56 @@ class BidRepository {
                     },
                 });
 
-                // If no existing engagement, we need to create one (uses a vote)
-                if (!existingEngagement) {
-                    // Find ANY active subscription with available votes
-                    // User may have multiple subscriptions - use the one with available votes
+                // Already in this auction → bidding again doesn't take another slot.
+                // Otherwise (first bid, or an old closed engagement on a reopened
+                // auction) the user needs an active subscription and a free slot.
+                if (existingEngagement?.eng_status !== "ACTIVE") {
                     const subscription = await tx.subscriptions.findFirst({
                         where: {
                             sub_user_id: bidder_id,
                             sub_status: "ACTIVE",
                             sub_expires_at: { gt: new Date() },
-                            sub_remaining_uses: { gt: 0 },
                             sub_plan_id: { not: SELL_PLAN_ID },
                         },
-                        orderBy: { sub_created_at: "desc" }, // Prefer newest subscription
+                        orderBy: { sub_created_at: "desc" },
+                    });
+                    if (!subscription)
+                        throw new ApiError(StatusCodes.FORBIDDEN, SUBSCRIPTION_ERRORS.SUBSCRIPTION_NOT_FOUND);
+
+                    // Lock the subscription row so two first-bids from the same user
+                    // are handled one after the other and can't both take the last slot
+                    await tx.subscriptions.update({
+                        where: { sub_id: subscription.sub_id },
+                        data: { sub_updated_at: new Date() },
                     });
 
-                    if (!subscription) {
-                        // Check if user has ANY subscription at all (to give better error message)
-                        const anySubscription = await tx.subscriptions.findFirst({
-                            where: {
-                                sub_user_id: bidder_id,
-                                sub_status: "ACTIVE",
-                                sub_expires_at: { gt: new Date() },
-                                sub_plan_id: { not: SELL_PLAN_ID },
+                    const used = await countUsedSlots(bidder_id, tx);
+                    if (used >= SUBSCRIPTION_LIMIT)
+                        throw new ApiError(StatusCodes.BAD_REQUEST, SUBSCRIPTION_ERRORS.ENGAGEMENT_LIMIT_REACHED);
+
+                    if (existingEngagement) {
+                        await tx.engagements.update({
+                            where: { eng_id: existingEngagement.eng_id },
+                            data: {
+                                eng_subscription_id: subscription.sub_id,
+                                eng_status: "ACTIVE",
+                                eng_closed_at: null,
                             },
                         });
-
-                        if (anySubscription) {
-                            // Has subscription but no votes left
-                            throw new ApiError(StatusCodes.BAD_REQUEST, SUBSCRIPTION_ERRORS.ENGAGEMENT_LIMIT_REACHED);
-                        } else {
-                            // No subscription at all
-                            throw new ApiError(StatusCodes.BAD_REQUEST, SUBSCRIPTION_ERRORS.SUBSCRIPTION_NOT_FOUND);
-                        }
+                    } else {
+                        await tx.engagements.create({
+                            data: {
+                                eng_user_id: bidder_id,
+                                eng_subscription_id: subscription.sub_id,
+                                eng_listing_id: listing_id,
+                                eng_type: "AUCTION",
+                                eng_status: "ACTIVE",
+                            },
+                        });
                     }
 
-                    // Create engagement record linked to this subscription
-                    await tx.engagements.create({
-                        data: {
-                            eng_user_id: bidder_id,
-                            eng_subscription_id: subscription.sub_id,
-                            eng_listing_id: listing_id,
-                            eng_type: "AUCTION",
-                            eng_status: "ACTIVE",
-                        },
-                    });
-
-                    // Decrement subscription uses (lock a vote). Conditional update so
-                    // concurrent first-bids can't push the count below zero.
-                    const decremented = await tx.subscriptions.updateMany({
-                        where: { sub_id: subscription.sub_id, sub_remaining_uses: { gt: 0 } },
-                        data: {
-                            sub_remaining_uses: { decrement: 1 },
-                        },
-                    });
-                    if (decremented.count === 0) {
-                        throw new ApiError(StatusCodes.BAD_REQUEST, SUBSCRIPTION_ERRORS.ENGAGEMENT_LIMIT_REACHED);
-                    }
+                    await syncRemainingUses(bidder_id, tx);
                 }
-                // If existingEngagement exists, user can bid without using a new vote
 
                 // Create bid record
                 const bid = await tx.bids.create({
@@ -170,6 +163,10 @@ class BidRepository {
                 });
 
                 return bid;
+            }, {
+                // Each statement sees rows committed by other requests, so the slot
+                // count after the lock above is always up to date
+                isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted,
             });
         });
     };

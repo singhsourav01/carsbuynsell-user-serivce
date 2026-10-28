@@ -2,6 +2,7 @@ import { ListingStatus, ListingType, FuelType, TransmissionType, BodyType, Owner
 import prisma from "../configs/prisma.config";
 import { listingSelect } from "../constants/listing.constant";
 import { queryHandler } from "../utils/helper";
+import { syncRemainingUses } from "./subscription.repository";
 import { createListingType, ListingQueryDTO, updateListingType } from "../types/listing.types";
 
 class ListingRepository {
@@ -118,17 +119,17 @@ class ListingRepository {
     private releaseEngagements = async (tx: Prisma.TransactionClient, listing_id: string) => {
         const activeEngagements = await tx.engagements.findMany({
             where: { eng_listing_id: listing_id, eng_status: "ACTIVE" },
+            select: { eng_user_id: true },
         });
 
-        for (const engagement of activeEngagements) {
-            await tx.engagements.update({
-                where: { eng_id: engagement.eng_id },
-                data: { eng_status: "CLOSED", eng_closed_at: new Date() },
-            });
-            await tx.subscriptions.update({
-                where: { sub_id: engagement.eng_subscription_id },
-                data: { sub_remaining_uses: { increment: 1 } },
-            });
+        await tx.engagements.updateMany({
+            where: { eng_listing_id: listing_id, eng_status: "ACTIVE" },
+            data: { eng_status: "CLOSED", eng_closed_at: new Date() },
+        });
+
+        // Recount each bidder's slots from their remaining live auctions
+        for (const { eng_user_id } of activeEngagements) {
+            await syncRemainingUses(eng_user_id, tx);
         }
 
         return activeEngagements.length;

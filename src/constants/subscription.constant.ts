@@ -1,6 +1,25 @@
+import { EngagementStatus, ListingStatus, ListingType } from "@prisma/client";
+
 export const SUBSCRIPTION_PRICE = 10000; // Fixed price in INR (rupees)
 export const SUBSCRIPTION_LIMIT = 3;      // Max active vehicle engagements at a time
 export const SELL_PLAN_ID = "sub_002";    // Vehicle listing fee plan - does not grant auction / buy now access
+
+/**
+ * Engagements that occupy a slot: the user has bid in the auction and it is
+ * still running (ACTIVE and not past its end time). Slots are always counted
+ * from this — never from the stored sub_remaining_uses counter — so they can't
+ * drift when listings are deleted, edited or closed.
+ */
+export const liveEngagementsWhere = (user_id: string) => ({
+    eng_user_id: user_id,
+    eng_status: EngagementStatus.ACTIVE,
+    eng_type: ListingType.AUCTION,
+    listing: {
+        lst_type: ListingType.AUCTION,
+        lst_status: ListingStatus.ACTIVE,
+        OR: [{ lst_auction_end: null }, { lst_auction_end: { gt: new Date() } }],
+    },
+});
 
 export const SUBSCRIPTION_ERRORS = {
     PLAN_NOT_FOUND: "Subscription plan not found",

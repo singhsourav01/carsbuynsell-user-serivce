@@ -5,6 +5,7 @@ import crypto from "crypto";
 import {
     SELL_PLAN_ID,
     SUBSCRIPTION_ERRORS,
+    SUBSCRIPTION_LIMIT,
     SUBSCRIPTION_PRICE,
 } from "../constants/subscription.constant";
 import SubscriptionRepository from "../repositories/subscription.repository";
@@ -131,11 +132,17 @@ class SubscriptionService {
         const subscription = await this.subscriptionRepository.findActiveSubscriptionAny(user_id);
         if (!subscription)
             throw new ApiError(StatusCodes.NOT_FOUND, SUBSCRIPTION_ERRORS.SUBSCRIPTION_NOT_FOUND);
+        // Slots come from the auctions the user is actually in, not the stored counter
+        const { used, available } = await this.subscriptionRepository.syncSlots(user_id);
         const engagements = await this.subscriptionRepository.findActiveEngagements(user_id);
         return {
             ...subscription,
+            sub_remaining_uses: available,
+            slots_total: SUBSCRIPTION_LIMIT,
+            slots_used: used,
+            slots_available: available,
+            slots_exhausted: available === 0,
             engagements,
-            slots_exhausted: subscription.sub_remaining_uses <= 0,
         };
     };
 

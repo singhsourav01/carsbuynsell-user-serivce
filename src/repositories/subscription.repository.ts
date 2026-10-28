@@ -1,7 +1,37 @@
-import { SubscriptionStatus } from "@prisma/client";
+import { Prisma, SubscriptionStatus } from "@prisma/client";
 import prisma from "../configs/prisma.config";
-import { engagementSelect, subscriptionSelect, SELL_PLAN_ID, SUBSCRIPTION_LIMIT } from "../constants/subscription.constant";
+import {
+    engagementSelect,
+    liveEngagementsWhere,
+    subscriptionSelect,
+    SELL_PLAN_ID,
+    SUBSCRIPTION_LIMIT,
+} from "../constants/subscription.constant";
 import { queryHandler } from "../utils/helper";
+
+type DbClient = typeof prisma | Prisma.TransactionClient;
+
+/** Number of slots a user currently occupies (auctions they're in that are still running). */
+export const countUsedSlots = (user_id: string, db: DbClient = prisma) =>
+    db.engagements.count({ where: liveEngagementsWhere(user_id) });
+
+/**
+ * Writes the real free-slot count onto the user's active subscriptions so the
+ * stored sub_remaining_uses (shown in the admin panel) always matches reality.
+ */
+export const syncRemainingUses = async (user_id: string, db: DbClient = prisma) => {
+    const used = await countUsedSlots(user_id, db);
+    const available = Math.max(0, SUBSCRIPTION_LIMIT - used);
+    await db.subscriptions.updateMany({
+        where: {
+            sub_user_id: user_id,
+            sub_status: SubscriptionStatus.ACTIVE,
+            sub_plan_id: { not: SELL_PLAN_ID },
+        },
+        data: { sub_remaining_uses: available },
+    });
+    return { used, available };
+};
 
 class SubscriptionRepository {
     findPlans = async () => {
@@ -63,15 +93,23 @@ class SubscriptionRepository {
         );
     };
 
-    /** Active auction engagements (occupied slots) for a user. */
+    /** Auctions currently occupying the user's slots. */
     findActiveEngagements = async (user_id: string) => {
         return queryHandler(() =>
             prisma.engagements.findMany({
-                where: { eng_user_id: user_id, eng_status: "ACTIVE" },
-                select: engagementSelect,
+                where: liveEngagementsWhere(user_id),
+                select: {
+                    ...engagementSelect,
+                    listing: { select: { lst_title: true, lst_auction_end: true } },
+                },
                 orderBy: { eng_created_at: "desc" },
             })
         );
+    };
+
+    /** Recomputes and stores the user's free slots; returns { used, available }. */
+    syncSlots = async (user_id: string) => {
+        return queryHandler(() => syncRemainingUses(user_id));
     };
 
     /**
