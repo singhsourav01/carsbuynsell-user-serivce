@@ -1,15 +1,9 @@
-import { ListingStatus } from "@prisma/client";
-
 /**
- * Which listings users can see: all listings, including expired / sold ones
- * (bidding and Buy Now stay closed on those). Only drafts and listings the
- * admin cancelled are hidden.
+ * Which listings users can see: ALL listings, whatever their status
+ * (expired, sold, cancelled, ...). Bidding and Buy Now stay closed on
+ * anything that isn't ACTIVE — the bid / buy endpoints check that.
  */
-export const visibleListingsWhere = {
-    lst_status: {
-        in: [ListingStatus.ACTIVE, ListingStatus.SOLD, ListingStatus.EXPIRED],
-    },
-};
+export const visibleListingsWhere = {};
 
 /** Live listings first (enum order: DRAFT, ACTIVE, SOLD, EXPIRED, ...), then newest. */
 export const visibleListingsOrderBy = [
